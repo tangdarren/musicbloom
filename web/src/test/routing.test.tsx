@@ -1,12 +1,50 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { apiClient } from "../api/client";
 import { TopNav } from "../components/TopNav";
 import { QueryProvider } from "../providers/QueryProvider";
 import { createAppRouter } from "../routes/router";
 import { createTestQueryClient } from "./test-utils";
+
+const gardenState = {
+  profile: { garden_name: "Starter Garden", theme: "meadow" },
+  mood: "serene" as const,
+  level: {
+    level: 1,
+    experience: {
+      total_experience: 0,
+      experience_in_level: 0,
+      experience_to_next_level: 100,
+    },
+  },
+  melody_points: 0,
+  streak: {
+    current_days: 0,
+    last_listening_utc_date: null,
+    bonus_points_awarded_today: 0,
+    daily_bonus_cap: 25,
+  },
+  artist_flowers: [],
+  milestone_plants: [],
+  unlocked_decorations: [],
+  equipped_decorations: [],
+  recent_achievements: [],
+  tracks_completed: 0,
+  total_listening_minutes: 0,
+};
+
+const playerSession = {
+  state: "stopped" as const,
+  active_track: null,
+  queue: [],
+  queue_index: null,
+  volume: { level: 0.8 },
+  shuffle: false,
+  repeat_mode: "off" as const,
+};
 
 function renderWithProviders(ui: React.ReactElement, route = "/") {
   return render(
@@ -17,10 +55,16 @@ function renderWithProviders(ui: React.ReactElement, route = "/") {
 }
 
 describe("routing", () => {
+  beforeEach(() => {
+    vi.spyOn(apiClient, "getGarden").mockResolvedValue(gardenState);
+    vi.spyOn(apiClient, "getDecorations").mockResolvedValue([]);
+    vi.spyOn(apiClient, "getPlayerSession").mockResolvedValue(playerSession);
+  });
+
   it.each([
     ["/", "Grow your music garden, one song at a time"],
     ["/player", "Garden playback studio"],
-    ["/garden", "Garden preview"],
+    ["/garden", "Your MusicBloom garden"],
     ["/quests", "Quest board"],
     ["/achievements", "Achievement gallery"],
     ["/dev-garden", "Dev garden sandbox"],

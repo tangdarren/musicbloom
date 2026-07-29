@@ -48,13 +48,15 @@ class TrackListeningStateRepository:
 
     def count_completed_for_user(self, user_id: int) -> int:
         """Return the number of tracks completed by a user."""
-        return len(
-            list(
-                self._db.scalars(
-                    select(TrackListeningState.track_id).where(
-                        TrackListeningState.user_id == user_id,
-                        TrackListeningState.completion_awarded.is_(True),
-                    ),
+        return len(self.list_completed_track_ids_for_user(user_id))
+
+    def list_completed_track_ids_for_user(self, user_id: int) -> list[str]:
+        """Return track IDs completed by a user."""
+        return list(
+            self._db.scalars(
+                select(TrackListeningState.track_id).where(
+                    TrackListeningState.user_id == user_id,
+                    TrackListeningState.completion_awarded.is_(True),
                 ),
             ),
         )

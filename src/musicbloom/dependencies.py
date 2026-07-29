@@ -14,6 +14,8 @@ from musicbloom.repositories.database_player import DatabasePlayerSessionReposit
 from musicbloom.repositories.decoration_unlock import DecorationUnlockRepository
 from musicbloom.repositories.demo_catalog import DemoCatalogRepository
 from musicbloom.repositories.demo_rewards_catalog import DemoRewardsCatalogRepository
+from musicbloom.repositories.equipped_decoration import EquippedDecorationRepository
+from musicbloom.repositories.garden_profile import GardenProfileRepository
 from musicbloom.repositories.listening_event import ListeningEventRepository
 from musicbloom.repositories.melody_points_transaction import (
     MelodyPointsTransactionRepository,
@@ -24,6 +26,7 @@ from musicbloom.repositories.reward_claim import RewardClaimRepository
 from musicbloom.repositories.track_listening_state import TrackListeningStateRepository
 from musicbloom.repositories.user_progress import UserProgressRepository
 from musicbloom.services.catalog import CatalogService
+from musicbloom.services.garden import GardenService
 from musicbloom.services.player import PlayerService
 from musicbloom.services.progression import ProgressionService
 from musicbloom.services.quest_achievement import QuestAchievementService
@@ -132,3 +135,29 @@ def get_progression_service(
 
 
 ProgressionServiceDep = Annotated[ProgressionService, Depends(get_progression_service)]
+
+
+def get_garden_service(
+    db: Annotated[Session, Depends(get_db)],
+    catalog_service: Annotated[CatalogService, Depends(get_catalog_service)],
+    rewards_catalog: Annotated[
+        DemoRewardsCatalogRepository,
+        Depends(get_demo_rewards_catalog_repository),
+    ],
+) -> GardenService:
+    """Return garden service scoped to the demo user."""
+    demo_user = get_demo_user(db)
+    return GardenService(
+        user_id=demo_user.id,
+        catalog_service=catalog_service,
+        rewards_catalog=rewards_catalog,
+        garden_profile_repository=GardenProfileRepository(db),
+        equipped_decoration_repository=EquippedDecorationRepository(db),
+        decoration_unlock_repository=DecorationUnlockRepository(db),
+        user_progress_repository=UserProgressRepository(db),
+        track_state_repository=TrackListeningStateRepository(db),
+        achievement_progress_repository=AchievementProgressRepository(db),
+    )
+
+
+GardenServiceDep = Annotated[GardenService, Depends(get_garden_service)]

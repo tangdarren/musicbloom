@@ -73,6 +73,10 @@ def test_equipped_decoration_repository(db_session: Session) -> None:
     assert first.id == second.id
     assert second.decoration_id == "fountain-002"
 
+    assert repository.unequip(user_id=user.id, decoration_id="fountain-002") is True
+    assert repository.list_for_user(user.id) == []
+    assert repository.unequip(user_id=user.id, decoration_id="fountain-002") is False
+
 
 def test_achievement_and_quest_repositories(db_session: Session) -> None:
     user = get_demo_user(db_session)

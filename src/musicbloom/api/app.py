@@ -15,6 +15,7 @@ from musicbloom.api.schemas import (
     build_health_response,
     build_root_response,
 )
+from musicbloom.api.v1.garden_handlers import register_garden_exception_handlers
 from musicbloom.api.v1.player_handlers import register_player_exception_handlers
 from musicbloom.api.v1.progression_handlers import (
     register_progression_exception_handlers,
@@ -61,6 +62,7 @@ def create_app(
     register_player_exception_handlers(application)
     register_progression_exception_handlers(application)
     register_quest_exception_handlers(application)
+    register_garden_exception_handlers(application)
 
     static_dir = Path(__file__).resolve().parents[3] / "static"
     if static_dir.is_dir():

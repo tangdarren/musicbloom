@@ -21,6 +21,7 @@ from musicbloom.db.mappers.player_session import (
 )
 from musicbloom.db.models.achievement_progress import AchievementProgress
 from musicbloom.db.models.decoration_unlock import DecorationUnlockRecord
+from musicbloom.db.models.equipped_decoration import EquippedDecoration
 from musicbloom.db.models.listening_event import ListeningEvent
 from musicbloom.db.models.melody_points_transaction import MelodyPointsTransaction
 from musicbloom.db.models.player_session import PlayerSessionRecord
@@ -144,6 +145,7 @@ def _reset_demo_progression_state(factory: sessionmaker[Session]) -> None:
         for model in (
             RewardClaim,
             DecorationUnlockRecord,
+            EquippedDecoration,
             QuestProgress,
             AchievementProgress,
             MelodyPointsTransaction,

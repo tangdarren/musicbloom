@@ -24,6 +24,9 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   }
 
   if (!bodyText) {
+    if (response.status === 204) {
+      return undefined as T;
+    }
     throw new ApiError("Empty response body", response.status, bodyText);
   }
 
@@ -176,4 +179,15 @@ export const apiClient = {
     position_ms: number;
     idempotency_key: string;
   }) => apiPost<ListeningEventRecord>("/api/v1/listening/events", payload),
+  getGarden: () => apiGet<import("./gardenTypes").GardenState>("/api/v1/garden"),
+  getDecorations: () =>
+    apiGet<import("./gardenTypes").DecorationCatalogEntry[]>(
+      "/api/v1/decorations",
+    ),
+  equipDecoration: (decorationId: string) =>
+    apiPut<import("./gardenTypes").EquipDecorationResult>(
+      `/api/v1/garden/decorations/${decorationId}/equip`,
+    ),
+  unequipDecoration: (decorationId: string) =>
+    apiDelete<void>(`/api/v1/garden/decorations/${decorationId}/equip`),
 };

@@ -24,6 +24,32 @@ class EquippedDecorationRepository:
             ),
         )
 
+    def get_by_decoration_id(
+        self,
+        *,
+        user_id: int,
+        decoration_id: str,
+    ) -> EquippedDecoration | None:
+        """Return an equipped decoration by decoration identifier."""
+        return self._db.scalar(
+            select(EquippedDecoration).where(
+                EquippedDecoration.user_id == user_id,
+                EquippedDecoration.decoration_id == decoration_id,
+            ),
+        )
+
+    def unequip(self, *, user_id: int, decoration_id: str) -> bool:
+        """Remove an equipped decoration. Returns True when removed."""
+        record = self.get_by_decoration_id(
+            user_id=user_id,
+            decoration_id=decoration_id,
+        )
+        if record is None:
+            return False
+        self._db.delete(record)
+        self._db.flush()
+        return True
+
     def equip(
         self,
         *,
