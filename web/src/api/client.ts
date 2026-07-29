@@ -233,4 +233,10 @@ export const apiClient = {
       "/api/v1/spotify/player/volume",
       { level },
     ),
+  getDevOpsStatus: () =>
+    apiGet<import("./devopsTypes").DevOpsStatusSnapshot>(
+      "/api/v1/devops/status",
+    ),
+  getDevOpsRuns: () =>
+    apiGet<import("./devopsTypes").DevOpsRunsSnapshot>("/api/v1/devops/runs"),
 };

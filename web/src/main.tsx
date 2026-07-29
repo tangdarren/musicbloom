@@ -5,6 +5,7 @@ import App from "./App";
 import "./index.css";
 import "./styles/player.css";
 import "./styles/garden.css";
+import "./styles/dev-garden.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

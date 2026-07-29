@@ -67,6 +67,7 @@ This repository contains the **MusicBloom backend** and an initial **React web i
 - Spotify account connection with encrypted OAuth token storage
 - Spotify playback metadata and remote control API (metadata only; no audio proxy)
 - Azure DevOps pipeline status API for Dev Garden build health (demo mode supported)
+- Dev Garden frontend that visualizes Azure Pipelines status separately from the listening garden
 - Visual demo music player with native audio, metadata visualization, and listening-event sync
 
 ## Local Setup
@@ -549,6 +550,22 @@ curl "http://127.0.0.1:8000/api/v1/devops/runs"
 - Authentication, authorization, rate limit, and temporary Azure DevOps failures
   return safe JSON errors without exposing the PAT.
 - Status responses are cached briefly to reduce Azure DevOps API traffic.
+
+### Why Azure DevOps is part of MusicBloom
+
+MusicBloom is both a playful listening experience and a portfolio project. The
+**Dev Garden** is a separate scene from the listener's music garden: it turns
+Azure Pipelines build health into a friendly visual story that recruiters,
+collaborators, and future-you can understand at a glance.
+
+Azure DevOps fits this goal because it already tracks the real delivery health of
+the project. MusicBloom reads normalized pipeline metadata through the backend,
+maps each run to a cutesy BloomBud scene, and never exposes credentials to the
+browser. That keeps the main garden focused on listening while the Dev Garden
+answers a different question: "Are the builds healthy right now?"
+
+Open `/dev-garden` in the web app to see the latest pipeline result, recent run
+history, success-rate summary, and a safe link back to the Azure DevOps build.
 
 ## Validation Commands
 

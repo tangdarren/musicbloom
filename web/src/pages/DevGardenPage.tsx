@@ -1,16 +1,18 @@
 import { PageCard } from "../components/PageCard";
+import { DevGardenExperience } from "../components/dev-garden/DevGardenExperience";
 
 export function DevGardenPage() {
   return (
     <PageCard
-      eyebrow="Developer tools"
-      title="Dev garden sandbox"
-      lede="A lightweight staging area for garden layouts, decoration slots, and visual experiments without touching production player state."
+      eyebrow="Portfolio tools"
+      title="Dev Garden"
+      lede="A separate cutesy scene that turns Azure Pipelines build health into something BloomBud can nurture. This garden is independent from your listening garden."
     >
       <p className="muted">
-        Use this route while iterating on art direction, spacing, and
-        accessibility before wiring live progression data.
+        MusicBloom reads normalized pipeline metadata from the backend only.
+        Azure DevOps credentials never reach the browser.
       </p>
+      <DevGardenExperience />
     </PageCard>
   );
 }

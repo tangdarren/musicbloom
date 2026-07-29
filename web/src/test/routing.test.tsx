@@ -76,6 +76,33 @@ describe("routing", () => {
       page_size: 20,
       total_pages: 0,
     });
+    vi.spyOn(apiClient, "getDevOpsStatus").mockResolvedValue({
+      configured: false,
+      demo_mode: true,
+      pipeline_id: 42,
+      pipeline_name: "musicbloom-ci",
+      latest_run: {
+        pipeline_id: 42,
+        pipeline_name: "musicbloom-ci",
+        run_id: 1284,
+        run_name: "20260728.42",
+        status: "completed",
+        result: "succeeded",
+        start_time: "2026-07-28T18:00:00Z",
+        finish_time: "2026-07-28T18:06:00Z",
+        source_branch: "main",
+        build_url: "https://dev.azure.com/demo-org/musicbloom/_build/results?buildId=1284",
+      },
+      message: "Demo pipeline data",
+    });
+    vi.spyOn(apiClient, "getDevOpsRuns").mockResolvedValue({
+      configured: false,
+      demo_mode: true,
+      pipeline_id: 42,
+      pipeline_name: "musicbloom-ci",
+      runs: [],
+      message: "Demo pipeline data",
+    });
   });
 
   it.each([
@@ -84,7 +111,7 @@ describe("routing", () => {
     ["/garden", "Your MusicBloom garden"],
     ["/quests", "Quest board"],
     ["/achievements", "Achievement gallery"],
-    ["/dev-garden", "Dev garden sandbox"],
+    ["/dev-garden", "Dev Garden"],
   ])("renders %s", async (path, heading) => {
     const testRouter = createAppRouter([path]);
 
