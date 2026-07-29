@@ -28,7 +28,12 @@ class QuestProgress(Base, TimestampMixin):
         default="not_started",
     )
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    period_key: Mapped[str] = mapped_column(String(16), nullable=False, default="")
     completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    claimed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

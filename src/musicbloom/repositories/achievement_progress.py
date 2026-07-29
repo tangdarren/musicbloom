@@ -27,27 +27,55 @@ class AchievementProgressRepository:
             ),
         )
 
-    def upsert_progress(
+    def list_for_user(self, user_id: int) -> list[AchievementProgress]:
+        """Return all achievement progress records for a user."""
+        return list(
+            self._db.scalars(
+                select(AchievementProgress).where(
+                    AchievementProgress.user_id == user_id,
+                ),
+            ),
+        )
+
+    def ensure_progress(
         self,
         *,
         user_id: int,
         achievement_id: str,
-        progress: int,
-        completed: bool = False,
     ) -> AchievementProgress:
-        """Create or update achievement progress."""
+        """Return achievement progress, creating it when missing."""
         record = self.get_for_user_and_achievement(user_id, achievement_id)
-        if record is None:
-            record = AchievementProgress(
-                user_id=user_id,
-                achievement_id=achievement_id,
-                progress=progress,
-                completed_at=datetime.now(tz=UTC) if completed else None,
-            )
-            self._db.add(record)
-        else:
-            record.progress = progress
-            record.completed_at = datetime.now(tz=UTC) if completed else None
+        if record is not None:
+            return record
+
+        record = AchievementProgress(
+            user_id=user_id,
+            achievement_id=achievement_id,
+            progress=0,
+        )
+        self._db.add(record)
+        self._db.flush()
+        self._db.refresh(record)
+        return record
+
+    def save_progress(
+        self,
+        *,
+        record: AchievementProgress,
+        progress: int,
+        completed: bool,
+    ) -> AchievementProgress:
+        """Persist updated achievement progress."""
+        record.progress = progress
+        if completed and record.completed_at is None:
+            record.completed_at = datetime.now(tz=UTC)
+        self._db.flush()
+        self._db.refresh(record)
+        return record
+
+    def mark_claimed(self, record: AchievementProgress) -> AchievementProgress:
+        """Mark an achievement reward as claimed."""
+        record.claimed_at = datetime.now(tz=UTC)
         self._db.flush()
         self._db.refresh(record)
         return record

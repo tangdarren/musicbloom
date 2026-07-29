@@ -54,6 +54,7 @@ This repository contains the **initial Python backend foundation only**.
 - SQLAlchemy 2 persistence with Alembic migrations (SQLite default, PostgreSQL compatible)
 - Database-backed player session storage with demo user seeding
 - Listening progression system with Melody Points, experience, levels, and streaks
+- Quest and achievement system with daily/weekly goals, unlockable rewards, and claim history
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
 - Test suite for endpoints, configuration, and application metadata
@@ -62,7 +63,6 @@ This repository contains the **initial Python backend foundation only**.
 
 - Frontend / visual player
 - Spotify integration
-- Quest and achievement API endpoints (entities are persisted, APIs planned)
 - Azure DevOps CI/CD pipelines
 
 ## Local Setup
@@ -221,6 +221,54 @@ curl -X POST "http://127.0.0.1:8000/api/v1/listening/events" \
 curl "http://127.0.0.1:8000/api/v1/progress"
 curl "http://127.0.0.1:8000/api/v1/stats"
 curl "http://127.0.0.1:8000/api/v1/streak"
+```
+
+### Quests, Achievements, and Rewards API
+
+Quest and achievement progress is updated automatically from validated listening
+events. Evaluation logic lives in `musicbloom.rewards.evaluator` and is kept
+separate from route handlers. Demo quests and achievements are seeded with stable
+IDs on database initialization.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/quests` | Daily and weekly quests with progress and completion percentages |
+| `GET /api/v1/achievements` | Lifetime achievements with progress and status |
+| `POST /api/v1/quests/{quest_id}/claim` | Claim a completed quest reward |
+| `POST /api/v1/achievements/{achievement_id}/claim` | Claim a completed achievement reward |
+| `GET /api/v1/rewards` | Melody Points balance, unlocked decorations, and claim history |
+
+**Quest lifecycle states:** `locked`, `active`, `completed`, `claimed`
+
+**Seeded demo quests:**
+
+| ID | Cadence | Objective |
+|----|---------|-----------|
+| `daily-complete-three-tracks` | Daily | Complete three tracks |
+| `daily-three-artists` | Daily | Listen to three different artists |
+| `daily-thirty-minutes` | Daily | Listen for 30 valid minutes |
+| `weekly-three-day-streak` | Weekly | Maintain a three-day streak |
+| `weekly-two-genres` | Weekly | Finish tracks from two genres |
+| `weekly-focus-session` | Weekly | Complete 60 valid listening minutes |
+
+**Seeded demo achievements:**
+
+| ID | Objective |
+|----|-----------|
+| `achievement-reach-level-two` | Reach MusicBloom level 2 |
+| `achievement-first-bloom` | Complete your first track |
+
+Rewards may grant Melody Points or unlock garden decorations. Completed rewards
+cannot be claimed twice; incomplete rewards return `409 Conflict`.
+
+Example requests:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/quests"
+curl "http://127.0.0.1:8000/api/v1/achievements"
+curl -X POST "http://127.0.0.1:8000/api/v1/quests/daily-complete-three-tracks/claim"
+curl -X POST "http://127.0.0.1:8000/api/v1/achievements/achievement-first-bloom/claim"
+curl "http://127.0.0.1:8000/api/v1/rewards"
 ```
 
 ### Demo Catalog API

@@ -31,3 +31,7 @@ class AchievementProgress(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
     )
+    claimed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )

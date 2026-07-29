@@ -1,6 +1,8 @@
 """Listening progression business logic."""
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from musicbloom.db.mappers.progression import (
     build_daily_streak,
@@ -35,6 +37,16 @@ from musicbloom.services.progression_errors import (
     TrackNotFoundError,
 )
 
+if TYPE_CHECKING:
+    from musicbloom.services.quest_achievement import QuestAchievementService
+
+
+@dataclass(slots=True)
+class _EventProcessingResult:
+    awards: list[PointsAwardExplanation]
+    validated_delta_ms: int = 0
+    completion_awarded: bool = False
+
 
 class ProgressionService:
     """Service layer for listening progression and rewards."""
@@ -48,6 +60,7 @@ class ProgressionService:
         track_state_repository: TrackListeningStateRepository,
         transaction_repository: MelodyPointsTransactionRepository,
         progress_repository: UserProgressRepository,
+        quest_achievement_service: "QuestAchievementService | None" = None,
         policy: ProgressionPolicy | None = None,
     ) -> None:
         self._user_id = user_id
@@ -56,6 +69,7 @@ class ProgressionService:
         self._track_states = track_state_repository
         self._transactions = transaction_repository
         self._progress = progress_repository
+        self._quest_service = quest_achievement_service
         self._policy = policy or ProgressionPolicy()
 
     def submit_listening_event(
@@ -106,7 +120,7 @@ class ProgressionService:
         )
         progress = self._progress.require_for_user(self._user_id)
 
-        awards = self._process_event(
+        result = self._process_event(
             event_type=event_type,
             position_ms=position_ms,
             track_duration_ms=track.duration_ms,
@@ -118,11 +132,21 @@ class ProgressionService:
         )
 
         progress.level = compute_user_level(progress.experience_points).level
+
+        if self._quest_service is not None:
+            self._quest_service.evaluate_after_listening_event(
+                track=track,
+                event_type=event_type,
+                occurred_at=event_time,
+                validated_listening_delta_ms=result.validated_delta_ms,
+                completion_awarded=result.completion_awarded,
+            )
+
         return build_listening_event_record(
             event=event,
-            awards=awards,
-            melody_points_earned=sum(award.melody_points for award in awards),
-            experience_earned=sum(award.experience for award in awards),
+            awards=result.awards,
+            melody_points_earned=sum(award.melody_points for award in result.awards),
+            experience_earned=sum(award.experience for award in result.awards),
         )
 
     def get_progress_summary(self) -> ProgressSummary:
@@ -176,34 +200,33 @@ class ProgressionService:
         event_id: int,
         track_id: str,
         occurred_at: datetime,
-    ) -> list[PointsAwardExplanation]:
+    ) -> _EventProcessingResult:
         if event_type is ListeningEventType.STARTED:
             track_state.last_position_ms = max(
                 track_state.last_position_ms,
                 position_ms,
             )
-            return []
+            return _EventProcessingResult(awards=[])
 
         if event_type is ListeningEventType.SKIPPED:
             track_state.skipped = True
             track_state.last_position_ms = position_ms
-            return []
-
-        awards: list[PointsAwardExplanation] = []
+            return _EventProcessingResult(awards=[])
 
         if event_type is ListeningEventType.PROGRESS:
-            awards.extend(
-                self._apply_progress_event(
-                    position_ms=position_ms,
-                    track_duration_ms=track_duration_ms,
-                    track_state=track_state,
-                    progress=progress,
-                    event_id=event_id,
-                    track_id=track_id,
-                    occurred_at=occurred_at,
-                ),
+            awards, validated_delta_ms = self._apply_progress_event(
+                position_ms=position_ms,
+                track_duration_ms=track_duration_ms,
+                track_state=track_state,
+                progress=progress,
+                event_id=event_id,
+                track_id=track_id,
+                occurred_at=occurred_at,
             )
-            return awards
+            return _EventProcessingResult(
+                awards=awards,
+                validated_delta_ms=validated_delta_ms,
+            )
 
         if event_type is ListeningEventType.COMPLETED:
             if track_state.skipped:
@@ -214,6 +237,7 @@ class ProgressionService:
                 track_state.last_position_ms,
                 position_ms,
             )
+            completion_awards: list[PointsAwardExplanation] = []
             meaningful_listen = (
                 track_state.validated_listening_ms
                 >= self._policy.meaningful_listen_ms(track_duration_ms)
@@ -226,7 +250,8 @@ class ProgressionService:
                 track_id=track_id,
             )
             if streak_award is not None:
-                awards.append(streak_award)
+                completion_awards.append(streak_award)
+            completion_awarded = False
             completion_award = self._policy.calculate_completion_award(
                 position_ms=position_ms,
                 track_duration_ms=track_duration_ms,
@@ -235,7 +260,8 @@ class ProgressionService:
             )
             if completion_award is not None:
                 track_state.completion_awarded = True
-                awards.append(
+                completion_awarded = True
+                completion_awards.append(
                     self._apply_award(
                         award=completion_award,
                         progress=progress,
@@ -243,7 +269,10 @@ class ProgressionService:
                         track_id=track_id,
                     ),
                 )
-            return awards
+            return _EventProcessingResult(
+                awards=completion_awards,
+                completion_awarded=completion_awarded,
+            )
 
         raise InvalidListeningEventError(f"Unsupported event type '{event_type.value}'")
 
@@ -257,7 +286,7 @@ class ProgressionService:
         event_id: int,
         track_id: str,
         occurred_at: datetime,
-    ) -> list[PointsAwardExplanation]:
+    ) -> tuple[list[PointsAwardExplanation], int]:
         if track_state.skipped:
             raise InvalidListeningEventError(
                 "Skipped tracks cannot earn listening progress",
@@ -308,7 +337,7 @@ class ProgressionService:
         if streak_award is not None:
             awards.append(streak_award)
 
-        return awards
+        return awards, delta_ms
 
     def _maybe_apply_streak_bonus(
         self,

@@ -1,5 +1,7 @@
 """Explicit database initialization and demo seeding."""
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -18,6 +20,10 @@ from musicbloom.db.models.garden_profile import GardenProfile
 from musicbloom.db.models.user_profile import UserProfile
 from musicbloom.db.models.user_progress import UserProgress
 from musicbloom.db.session import get_session_factory
+from musicbloom.repositories.achievement_progress import AchievementProgressRepository
+from musicbloom.repositories.demo_rewards_catalog import DemoRewardsCatalogRepository
+from musicbloom.repositories.quest_progress import QuestProgressRepository
+from musicbloom.rewards.evaluator import period_key_for_cadence
 
 
 def create_all_tables(engine: Engine) -> None:
@@ -63,13 +69,35 @@ def seed_demo_user(session: Session) -> UserProfile:
     return user
 
 
+def seed_demo_quests_and_achievements(session: Session, user_id: int) -> None:
+    """Ensure demo quest and achievement progress rows exist."""
+    catalog = DemoRewardsCatalogRepository()
+    quest_repo = QuestProgressRepository(session)
+    achievement_repo = AchievementProgressRepository(session)
+    now = datetime.now(tz=UTC)
+
+    for quest in catalog.list_quests():
+        quest_repo.ensure_progress(
+            user_id=user_id,
+            quest_id=quest.id,
+            period_key=period_key_for_cadence(quest.cadence, now),
+        )
+
+    for achievement in catalog.list_achievements():
+        achievement_repo.ensure_progress(
+            user_id=user_id,
+            achievement_id=achievement.id,
+        )
+
+
 def initialize_database(engine: Engine, settings: Settings) -> None:
     """Initialize schema and optional demo seed data."""
     create_all_tables(engine)
     if settings.demo_mode:
         factory = get_session_factory(engine)
         with factory() as session:
-            seed_demo_user(session)
+            user = seed_demo_user(session)
+            seed_demo_quests_and_achievements(session, user.id)
             session.commit()
 
 

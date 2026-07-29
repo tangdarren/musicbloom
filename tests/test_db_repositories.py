@@ -79,33 +79,52 @@ def test_achievement_and_quest_repositories(db_session: Session) -> None:
     achievement_repo = AchievementProgressRepository(db_session)
     quest_repo = QuestProgressRepository(db_session)
 
-    achievement_repo.upsert_progress(
+    achievement = achievement_repo.ensure_progress(
         user_id=user.id,
-        achievement_id="first-bloom",
+        achievement_id="achievement-first-bloom",
+    )
+    achievement_repo.save_progress(
+        record=achievement,
         progress=1,
         completed=True,
     )
-    quest_repo.upsert_progress(
+    quest = quest_repo.ensure_progress(
         user_id=user.id,
-        quest_id="water-the-garden",
-        status="in_progress",
-        progress=2,
+        quest_id="daily-complete-three-tracks",
+        period_key="2026-01-01",
     )
-    updated_quest = quest_repo.upsert_progress(
-        user_id=user.id,
-        quest_id="water-the-garden",
+    updated_quest = quest_repo.save_progress(
+        record=quest,
         status="completed",
-        progress=5,
+        progress=3,
         completed=True,
     )
-    updated_achievement = achievement_repo.upsert_progress(
+    claimed_quest = quest_repo.mark_claimed(updated_quest)
+
+    assert claimed_quest.claimed_at is not None
+    assert claimed_quest.status == "claimed"
+    assert achievement.completed_at is not None
+
+
+def test_quest_and_achievement_list_for_user(db_session: Session) -> None:
+    user = get_demo_user(db_session)
+    quest_repo = QuestProgressRepository(db_session)
+    achievement_repo = AchievementProgressRepository(db_session)
+
+    quest_repo.ensure_progress(
         user_id=user.id,
-        achievement_id="first-bloom",
-        progress=2,
-        completed=False,
+        quest_id="daily-complete-three-tracks",
+        period_key="2026-01-01",
+    )
+    first = achievement_repo.ensure_progress(
+        user_id=user.id,
+        achievement_id="achievement-first-bloom",
+    )
+    second = achievement_repo.ensure_progress(
+        user_id=user.id,
+        achievement_id="achievement-first-bloom",
     )
 
-    assert updated_quest.completed_at is not None
-    assert updated_quest.status == "completed"
-    assert updated_achievement.completed_at is None
-    assert updated_achievement.progress == 2
+    assert len(quest_repo.list_for_user(user.id)) == 1
+    assert len(achievement_repo.list_for_user(user.id)) == 1
+    assert first.id == second.id

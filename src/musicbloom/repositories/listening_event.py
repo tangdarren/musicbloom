@@ -62,6 +62,27 @@ class ListeningEventRepository:
             ),
         )
 
+    def list_completed_track_ids_in_period(
+        self,
+        *,
+        user_id: int,
+        start: datetime,
+        end: datetime,
+    ) -> list[str]:
+        """Return track IDs completed by a user within a UTC period."""
+        return list(
+            self._db.scalars(
+                select(ListeningEvent.track_id)
+                .where(
+                    ListeningEvent.user_id == user_id,
+                    ListeningEvent.event_type == "completed",
+                    ListeningEvent.occurred_at >= start,
+                    ListeningEvent.occurred_at <= end,
+                )
+                .distinct(),
+            ),
+        )
+
     def count_for_user(self, user_id: int) -> int:
         """Return the number of listening events for a user."""
         return int(

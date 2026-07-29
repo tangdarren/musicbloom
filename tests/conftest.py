@@ -10,14 +10,22 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from musicbloom.api.app import create_app
 from musicbloom.config import Settings
-from musicbloom.db.init import get_demo_user, initialize_database
+from musicbloom.db.init import (
+    get_demo_user,
+    initialize_database,
+    seed_demo_quests_and_achievements,
+)
 from musicbloom.db.mappers.player_session import (
     apply_player_session_to_record,
     create_default_player_session_record,
 )
+from musicbloom.db.models.achievement_progress import AchievementProgress
+from musicbloom.db.models.decoration_unlock import DecorationUnlockRecord
 from musicbloom.db.models.listening_event import ListeningEvent
 from musicbloom.db.models.melody_points_transaction import MelodyPointsTransaction
 from musicbloom.db.models.player_session import PlayerSessionRecord
+from musicbloom.db.models.quest_progress import QuestProgress
+from musicbloom.db.models.reward_claim import RewardClaim
 from musicbloom.db.models.track_listening_state import TrackListeningState
 from musicbloom.db.models.user_progress import UserProgress
 from musicbloom.db.session import create_test_database_engine, get_db
@@ -134,6 +142,10 @@ def _reset_demo_progression_state(factory: sessionmaker[Session]) -> None:
             progress.streak_bonus_utc_date = None
 
         for model in (
+            RewardClaim,
+            DecorationUnlockRecord,
+            QuestProgress,
+            AchievementProgress,
             MelodyPointsTransaction,
             ListeningEvent,
             TrackListeningState,
@@ -142,4 +154,5 @@ def _reset_demo_progression_state(factory: sessionmaker[Session]) -> None:
                 select(model).where(model.user_id == user.id),
             ):
                 session.delete(record)
+        seed_demo_quests_and_achievements(session, user.id)
         session.commit()
