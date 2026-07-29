@@ -1,9 +1,10 @@
 interface VolumeControlProps {
   level: number;
+  disabled?: boolean;
   onChange: (level: number) => void;
 }
 
-export function VolumeControl({ level, onChange }: VolumeControlProps) {
+export function VolumeControl({ level, disabled = false, onChange }: VolumeControlProps) {
   return (
     <div className="volume-control">
       <label htmlFor="volume-control">Volume</label>
@@ -14,6 +15,7 @@ export function VolumeControl({ level, onChange }: VolumeControlProps) {
         max={1}
         step={0.05}
         value={level}
+        disabled={disabled}
         aria-valuetext={`${Math.round(level * 100)} percent`}
         onChange={(event) => onChange(Number(event.target.value))}
       />

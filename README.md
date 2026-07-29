@@ -18,9 +18,9 @@ A playful, garden-themed music experience that turns everyday listening into som
 - **Decorations** — unlock and place items to personalize your garden
 - **BloomBud** — a mascot whose mood and appearance respond to your listening habits
 
-### Spotify Integration *(planned)*
+### Spotify Integration
 
-Connect a Spotify account to sync playback, track listening history, and drive garden growth from real music activity.
+Connect a Spotify account for live playback metadata and remote playback control. Demo mode continues to work without Spotify credentials.
 
 ### Azure DevOps Integration *(planned)*
 
@@ -63,13 +63,10 @@ This repository contains the **MusicBloom backend** and an initial **React web i
 - Quest and achievement system with daily/weekly goals, unlockable rewards, and claim history
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
-- Test suite for endpoints, configuration, and application metadata
-
-**Not yet implemented:**
-
-- Visual demo music player with native audio, Web Audio visualization, and listening-event sync
-- Spotify integration
-- Azure DevOps CI/CD pipelines
+- Interactive music garden with BloomBud mascot and decoration equip/unequip
+- Spotify account connection with encrypted OAuth token storage
+- Spotify playback metadata and remote control API (metadata only; no audio proxy)
+- Visual demo music player with native audio, metadata visualization, and listening-event sync
 
 ## Local Setup
 
@@ -431,6 +428,81 @@ curl -X POST "http://127.0.0.1:8000/api/v1/player/next"
 Duplicate queue entries are rejected unless `allow_duplicate` is set to `true`.
 Seek positions and volume values are validated; unknown tracks and queue items
 return `404`, and invalid playback actions return useful `4xx` responses.
+
+### Spotify Account Connection
+
+Spotify OAuth is optional. When credentials are unset, MusicBloom stays in demo mode.
+
+| Variable | Purpose |
+|----------|---------|
+| `MUSICBLOOM_SPOTIFY_CLIENT_ID` | Spotify app client ID |
+| `MUSICBLOOM_SPOTIFY_CLIENT_SECRET` | Spotify app client secret (server-side only) |
+| `MUSICBLOOM_SPOTIFY_REDIRECT_URI` | OAuth callback URL registered with Spotify |
+| `MUSICBLOOM_SPOTIFY_SCOPES` | Comma-separated OAuth scopes |
+| `MUSICBLOOM_SPOTIFY_FRONTEND_SUCCESS_REDIRECT` | Frontend URL after successful connect |
+| `MUSICBLOOM_SPOTIFY_FRONTEND_FAILURE_REDIRECT` | Frontend URL after failed connect |
+| `MUSICBLOOM_TOKEN_ENCRYPTION_KEY` | Fernet key material for encrypted token storage |
+
+Development callback example:
+
+```bash
+MUSICBLOOM_SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/api/v1/auth/spotify/callback
+```
+
+Register the same redirect URI in the Spotify Developer Dashboard.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/auth/spotify/login` | Begin OAuth and redirect to Spotify |
+| `GET /api/v1/auth/spotify/callback` | Complete OAuth and redirect to the frontend |
+| `GET /api/v1/auth/spotify/status` | Connection status without token material |
+| `DELETE /api/v1/auth/spotify` | Disconnect and delete stored tokens |
+
+### Spotify Playback API
+
+The Spotify playback API is separate from the demo player session API. It returns
+normalized metadata and device information only. MusicBloom never downloads,
+proxies, caches, or analyzes Spotify audio.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/spotify/player` | Current playback state, track metadata, device, recent tracks |
+| `PUT /api/v1/spotify/player/play` | Resume or start playback on the active Spotify device |
+| `PUT /api/v1/spotify/player/pause` | Pause playback |
+| `POST /api/v1/spotify/player/next` | Skip to the next track |
+| `POST /api/v1/spotify/player/previous` | Skip to the previous track |
+| `PUT /api/v1/spotify/player/seek` | Seek within the active track |
+| `PUT /api/v1/spotify/player/volume` | Set normalized volume (`0.0`–`1.0`) |
+
+Example requests:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/spotify/player"
+curl -X PUT "http://127.0.0.1:8000/api/v1/spotify/player/pause"
+curl -X PUT "http://127.0.0.1:8000/api/v1/spotify/player/seek" \
+  -H "Content-Type: application/json" \
+  -d '{"position_ms":45000}'
+```
+
+#### Spotify setup notes
+
+1. Create a Spotify app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Add the backend callback URI shown above.
+3. Set the environment variables in `.env`.
+4. Connect from the MusicBloom home page.
+5. Open the visual player and manually switch to **Spotify Mode**.
+
+#### Spotify limitations
+
+- Playback control requires an active Spotify device. Open Spotify on a phone,
+  desktop, or web player and start playback before using controls.
+- Users who connected before playback scopes were added must disconnect and
+  reconnect to grant `user-modify-playback-state`.
+- Spotify rate limits may temporarily block control requests; the API returns
+  `429` with a safe error message.
+- The frontend displays metadata and playback state only. Audio continues to
+  play through Spotify itself.
+- Demo mode and Spotify mode are separate. MusicBloom does not auto-switch modes.
 
 ## Validation Commands
 

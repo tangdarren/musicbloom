@@ -13,6 +13,10 @@ from musicbloom.integrations.spotify.client import (
     HttpSpotifyOAuthClient,
     SpotifyOAuthClient,
 )
+from musicbloom.integrations.spotify.playback_client import (
+    HttpSpotifyPlaybackClient,
+    SpotifyPlaybackClient,
+)
 from musicbloom.repositories.achievement_progress import AchievementProgressRepository
 from musicbloom.repositories.database_player import DatabasePlayerSessionRepository
 from musicbloom.repositories.decoration_unlock import DecorationUnlockRepository
@@ -36,6 +40,7 @@ from musicbloom.services.player import PlayerService
 from musicbloom.services.progression import ProgressionService
 from musicbloom.services.quest_achievement import QuestAchievementService
 from musicbloom.services.spotify_auth import SpotifyAuthService
+from musicbloom.services.spotify_playback import SpotifyPlaybackService
 
 
 @lru_cache
@@ -191,3 +196,28 @@ def get_spotify_auth_service(
 
 GardenServiceDep = Annotated[GardenService, Depends(get_garden_service)]
 SpotifyAuthServiceDep = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]
+
+
+def get_spotify_playback_client() -> SpotifyPlaybackClient:
+    """Return the Spotify playback HTTP client."""
+    return HttpSpotifyPlaybackClient()
+
+
+def get_spotify_playback_service(
+    auth_service: Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)],
+    playback_client: Annotated[
+        SpotifyPlaybackClient,
+        Depends(get_spotify_playback_client),
+    ],
+) -> SpotifyPlaybackService:
+    """Return Spotify playback service scoped to the demo user."""
+    return SpotifyPlaybackService(
+        auth_service=auth_service,
+        playback_client=playback_client,
+    )
+
+
+SpotifyPlaybackServiceDep = Annotated[
+    SpotifyPlaybackService,
+    Depends(get_spotify_playback_service),
+]

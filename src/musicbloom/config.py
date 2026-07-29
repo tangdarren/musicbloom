@@ -12,6 +12,7 @@ DEFAULT_SPOTIFY_SCOPES: list[str] = [
     "user-read-private",
     "user-read-playback-state",
     "user-read-currently-playing",
+    "user-modify-playback-state",
 ]
 
 DEFAULT_SPOTIFY_SUCCESS_REDIRECT = "http://localhost:5173/?spotify=connected"
@@ -20,6 +21,7 @@ DEFAULT_SPOTIFY_FAILURE_REDIRECT = "http://localhost:5173/?spotify=error"
 SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_PROFILE_URL = "https://api.spotify.com/v1/me"
+SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
 OAUTH_STATE_COOKIE = "musicbloom_spotify_oauth_state"
 OAUTH_STATE_MAX_AGE_SECONDS = 600

@@ -59,6 +59,23 @@ describe("routing", () => {
     vi.spyOn(apiClient, "getGarden").mockResolvedValue(gardenState);
     vi.spyOn(apiClient, "getDecorations").mockResolvedValue([]);
     vi.spyOn(apiClient, "getPlayerSession").mockResolvedValue(playerSession);
+    vi.spyOn(apiClient, "getSpotifyStatus").mockResolvedValue({
+      status: "disconnected",
+      configured: false,
+      display_name: null,
+      spotify_user_id: null,
+      scopes: [],
+      expires_at: null,
+      error_code: null,
+      error_message: null,
+    });
+    vi.spyOn(apiClient, "getTracks").mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+    });
   });
 
   it.each([

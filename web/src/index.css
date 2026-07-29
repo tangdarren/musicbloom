@@ -424,6 +424,113 @@ h1 {
   gap: 0.75rem;
 }
 
+.playback-studio {
+  display: grid;
+  gap: 1rem;
+}
+
+.playback-mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.playback-mode-selector__option {
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.playback-mode-selector__option.is-active {
+  background: var(--color-bg-accent);
+  border-color: var(--color-accent);
+}
+
+.playback-mode-selector__hint {
+  flex-basis: 100%;
+}
+
+.spotify-mode-banner,
+.demo-mode-banner {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-accent);
+}
+
+.spotify-mode-banner strong,
+.demo-mode-banner strong {
+  color: var(--color-text);
+}
+
+.metadata-visualizer {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--accent-primary) 18%, white),
+    var(--color-surface)
+  );
+  overflow: hidden;
+}
+
+.metadata-visualizer__artwork,
+.metadata-visualizer__fallback {
+  width: 160px;
+  height: 160px;
+  border-radius: 1rem;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  font-size: 3rem;
+  background: color-mix(in srgb, var(--accent-primary) 30%, white);
+}
+
+.metadata-visualizer__pulse {
+  position: absolute;
+  inset: 1rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  opacity: 0;
+}
+
+.metadata-visualizer.is-playing .metadata-visualizer__pulse {
+  animation: metadata-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes metadata-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(1.02);
+  }
+}
+
+.spotify-recent-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.spotify-recent-list li {
+  display: grid;
+  gap: 0.15rem;
+}
+
 @media (max-width: 640px) {
   .top-nav__links {
     overflow-x: auto;

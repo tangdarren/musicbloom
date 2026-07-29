@@ -156,6 +156,31 @@ class SpotifyAuthService:
             raise SpotifyConnectionNotFoundError("No Spotify account is connected")
         return SpotifyDisconnectResult(disconnected=True)
 
+    async def get_valid_access_token(self) -> str:
+        """Return a valid access token for Spotify API calls."""
+        self._require_configured()
+        record = self._repository.get_for_user(self._user_id)
+        if record is None:
+            raise SpotifyConnectionNotFoundError("No Spotify account is connected")
+
+        if record.last_error_code:
+            raise SpotifyTokenError(
+                record.last_error_message or "Spotify connection needs attention",
+            )
+
+        if self._token_needs_refresh(record):
+            record = await self._refresh_connection(record)
+            if record.last_error_code:
+                raise SpotifyTokenError(
+                    record.last_error_message or "Spotify access token refresh failed",
+                )
+
+        encryptor = self._require_encryptor()
+        try:
+            return encryptor.decrypt(record.encrypted_access_token)
+        except TokenEncryptionError as exc:
+            raise SpotifyTokenError("Unable to decrypt Spotify access token") from exc
+
     def failure_redirect(self, *, reason: str) -> str:
         """Return a frontend failure redirect URL with a safe reason code."""
         return self._append_query_param(

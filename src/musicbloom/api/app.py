@@ -25,6 +25,9 @@ from musicbloom.api.v1.router import router as v1_router
 from musicbloom.api.v1.spotify_auth_handlers import (
     register_spotify_auth_exception_handlers,
 )
+from musicbloom.api.v1.spotify_player_handlers import (
+    register_spotify_playback_exception_handlers,
+)
 from musicbloom.config import Settings
 from musicbloom.constants import API_DESCRIPTION, API_TITLE, __version__
 from musicbloom.db.init import initialize_database
@@ -67,6 +70,7 @@ def create_app(
     register_quest_exception_handlers(application)
     register_garden_exception_handlers(application)
     register_spotify_auth_exception_handlers(application)
+    register_spotify_playback_exception_handlers(application)
 
     static_dir = Path(__file__).resolve().parents[3] / "static"
     if static_dir.is_dir():

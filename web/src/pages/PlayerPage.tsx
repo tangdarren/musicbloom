@@ -1,5 +1,6 @@
 import { PlayerProvider } from "../player/PlayerContext";
-import { VisualPlayer } from "../components/player/VisualPlayer";
+import { PlaybackModeProvider } from "../player/PlaybackModeContext";
+import { PlaybackStudio } from "../components/player/PlaybackStudio";
 
 export function PlayerPage() {
   return (
@@ -8,13 +9,15 @@ export function PlayerPage() {
         <p className="eyebrow">Visual player</p>
         <h1>Garden playback studio</h1>
         <p className="lede">
-          Play demo catalog tracks, manage your queue, and send listening events
-          to the MusicBloom backend for Melody Points and quest progress.
+          Choose Demo Mode for the fictional catalog or Spotify Mode for live
+          metadata and playback control through your connected account.
         </p>
       </header>
-      <PlayerProvider>
-        <VisualPlayer />
-      </PlayerProvider>
+      <PlaybackModeProvider>
+        <PlayerProvider>
+          <PlaybackStudio />
+        </PlayerProvider>
+      </PlaybackModeProvider>
     </section>
   );
 }

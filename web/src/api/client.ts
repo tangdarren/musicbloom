@@ -16,11 +16,16 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   const bodyText = await response.text();
 
   if (!response.ok) {
-    throw new ApiError(
-      `Request failed with status ${response.status}`,
-      response.status,
-      bodyText,
-    );
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const parsed = JSON.parse(bodyText) as { detail?: string };
+      if (typeof parsed.detail === "string" && parsed.detail.trim()) {
+        message = parsed.detail;
+      }
+    } catch {
+      // Keep the generic status message when the body is not JSON.
+    }
+    throw new ApiError(message, response.status, bodyText);
   }
 
   if (!bodyText) {
@@ -197,5 +202,35 @@ export const apiClient = {
   disconnectSpotify: () =>
     apiDelete<import("./spotifyTypes").SpotifyDisconnectResult>(
       "/api/v1/auth/spotify",
+    ),
+  getSpotifyPlayer: () =>
+    apiGet<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player",
+    ),
+  spotifyPlay: () =>
+    apiPut<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/play",
+    ),
+  spotifyPause: () =>
+    apiPut<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/pause",
+    ),
+  spotifyNext: () =>
+    apiPost<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/next",
+    ),
+  spotifyPrevious: () =>
+    apiPost<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/previous",
+    ),
+  spotifySeek: (positionMs: number) =>
+    apiPut<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/seek",
+      { position_ms: positionMs },
+    ),
+  spotifySetVolume: (level: number) =>
+    apiPut<import("./spotifyPlayerTypes").SpotifyPlayerSnapshot>(
+      "/api/v1/spotify/player/volume",
+      { level },
     ),
 };

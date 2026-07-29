@@ -17,12 +17,14 @@ from musicbloom.security.oauth_state import (
     build_signed_oauth_state,
     generate_oauth_state,
 )
+from musicbloom.security.token_encryption import TokenEncryptor
 from musicbloom.services.spotify_auth import SpotifyAuthService
 from musicbloom.services.spotify_auth_errors import (
     AuthorizationDeniedError,
     OAuthStateMismatchError,
     SpotifyConnectionNotFoundError,
     SpotifyNotConfiguredError,
+    SpotifyTokenError,
 )
 
 
@@ -238,6 +240,118 @@ def test_disconnect_requires_existing_connection(
 ) -> None:
     with pytest.raises(SpotifyConnectionNotFoundError):
         spotify_service.disconnect()
+
+
+def test_get_valid_access_token_returns_decrypted_token(
+    spotify_service: SpotifyAuthService,
+) -> None:
+    state = generate_oauth_state()
+    signed_state = build_signed_oauth_state(
+        state,
+        _spotify_settings().secret_key,  # type: ignore[arg-type]
+    )
+    asyncio.run(
+        spotify_service.complete_login(
+            code="auth-code",
+            state=state,
+            signed_state_cookie=signed_state,
+            error=None,
+        ),
+    )
+
+    token = asyncio.run(spotify_service.get_valid_access_token())
+
+    assert token == "access-token"
+
+
+def test_get_valid_access_token_raises_when_connection_has_error(
+    db_session: Session,
+) -> None:
+    user = get_demo_user(db_session)
+    repo = SpotifyConnectionRepository(db_session)
+    encryptor = TokenEncryptor(_spotify_settings().token_encryption_key)  # type: ignore[arg-type]
+    record = repo.upsert_connection(
+        user_id=user.id,
+        spotify_user_id="spotify-user-123",
+        display_name="Bloom Listener",
+        encrypted_access_token=encryptor.encrypt("access-token"),
+        encrypted_refresh_token=encryptor.encrypt("refresh-token"),
+        token_expires_at=datetime.now(tz=UTC) + timedelta(hours=1),
+        scopes="user-read-email",
+    )
+    repo.mark_error(
+        record=record,
+        error_code="token_refresh_failed",
+        error_message="Spotify access token refresh failed",
+    )
+    service = SpotifyAuthService(
+        settings=_spotify_settings(),
+        user_id=user.id,
+        repository=repo,
+        spotify_client=HttpSpotifyOAuthClient(
+            transport=httpx.MockTransport(lambda _: httpx.Response(404)),
+        ),
+    )
+
+    with pytest.raises(SpotifyTokenError):
+        asyncio.run(service.get_valid_access_token())
+
+
+def test_get_valid_access_token_raises_on_decrypt_failure(
+    db_session: Session,
+) -> None:
+    user = get_demo_user(db_session)
+    repo = SpotifyConnectionRepository(db_session)
+    repo.upsert_connection(
+        user_id=user.id,
+        spotify_user_id="spotify-user-123",
+        display_name="Bloom Listener",
+        encrypted_access_token="invalid",
+        encrypted_refresh_token="invalid",
+        token_expires_at=datetime.now(tz=UTC) + timedelta(hours=1),
+        scopes="user-read-email",
+    )
+    service = SpotifyAuthService(
+        settings=_spotify_settings(),
+        user_id=user.id,
+        repository=repo,
+        spotify_client=HttpSpotifyOAuthClient(
+            transport=httpx.MockTransport(lambda _: httpx.Response(404)),
+        ),
+    )
+
+    with pytest.raises(SpotifyTokenError):
+        asyncio.run(service.get_valid_access_token())
+
+
+def test_get_valid_access_token_raises_after_failed_refresh(
+    db_session: Session,
+) -> None:
+    user = get_demo_user(db_session)
+    repo = SpotifyConnectionRepository(db_session)
+    encryptor = TokenEncryptor(_spotify_settings().token_encryption_key)  # type: ignore[arg-type]
+    repo.upsert_connection(
+        user_id=user.id,
+        spotify_user_id="spotify-user-123",
+        display_name="Bloom Listener",
+        encrypted_access_token=encryptor.encrypt("old-access-token"),
+        encrypted_refresh_token=encryptor.encrypt("refresh-token"),
+        token_expires_at=datetime.now(tz=UTC) - timedelta(minutes=5),
+        scopes="user-read-email",
+    )
+    service = SpotifyAuthService(
+        settings=_spotify_settings(),
+        user_id=user.id,
+        repository=repo,
+        spotify_client=HttpSpotifyOAuthClient(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(500, json={"error": "server_error"}),
+            ),
+        ),
+    )
+
+    with pytest.raises(SpotifyTokenError):
+        asyncio.run(service.get_valid_access_token())
 
 
 def test_disconnect_removes_connection(
