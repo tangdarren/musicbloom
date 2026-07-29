@@ -27,7 +27,7 @@ def test_list_tracks_includes_required_track_fields(client: TestClient) -> None:
     assert track["duration_ms"] == 184_000
     artwork_path = track["artwork"]["local_path"]
     assert artwork_path == "/static/demo/artwork/morning-dew-waltz.png"
-    assert track["audio"]["local_path"] == "/static/demo/audio/morning-dew-waltz.ogg"
+    assert track["audio"]["local_path"] == "/static/demo/audio/morning-dew-waltz.wav"
     assert track["mood"] == "calm"
     assert track["genre"] == "acoustic garden"
     assert track["accent_theme"]["primary"] == "#7BC47F"

@@ -19,7 +19,7 @@ function renderWithProviders(ui: React.ReactElement, route = "/") {
 describe("routing", () => {
   it.each([
     ["/", "Grow your music garden, one song at a time"],
-    ["/player", "Player coming soon"],
+    ["/player", "Garden playback studio"],
     ["/garden", "Garden preview"],
     ["/quests", "Quest board"],
     ["/achievements", "Achievement gallery"],

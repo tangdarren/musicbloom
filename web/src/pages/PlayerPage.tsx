@@ -1,16 +1,20 @@
-import { PageCard } from "../components/PageCard";
+import { PlayerProvider } from "../player/PlayerContext";
+import { VisualPlayer } from "../components/player/VisualPlayer";
 
 export function PlayerPage() {
   return (
-    <PageCard
-      eyebrow="Visual player"
-      title="Player coming soon"
-      lede="This route will host the full garden-themed playback experience. For now, explore the demo catalog through the FastAPI backend while the interface takes shape."
-    >
-      <p className="muted">
-        Planned features: cozy playback controls, track artwork, queue
-        management, and BloomBud reactions tied to listening events.
-      </p>
-    </PageCard>
+    <section className="page player-page">
+      <header className="player-page__header">
+        <p className="eyebrow">Visual player</p>
+        <h1>Garden playback studio</h1>
+        <p className="lede">
+          Play demo catalog tracks, manage your queue, and send listening events
+          to the MusicBloom backend for Melody Points and quest progress.
+        </p>
+      </header>
+      <PlayerProvider>
+        <VisualPlayer />
+      </PlayerProvider>
+    </section>
   );
 }

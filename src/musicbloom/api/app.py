@@ -2,9 +2,11 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.engine import Engine
 
 from musicbloom.api.schemas import (
@@ -59,6 +61,10 @@ def create_app(
     register_player_exception_handlers(application)
     register_progression_exception_handlers(application)
     register_quest_exception_handlers(application)
+
+    static_dir = Path(__file__).resolve().parents[3] / "static"
+    if static_dir.is_dir():
+        application.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     @application.get("/", response_model=RootResponse)
     def read_root() -> RootResponse:

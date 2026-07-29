@@ -67,7 +67,7 @@ This repository contains the **MusicBloom backend** and an initial **React web i
 
 **Not yet implemented:**
 
-- Full visual player UI (route scaffold only)
+- Visual demo music player with native audio, Web Audio visualization, and listening-event sync
 - Spotify integration
 - Azure DevOps CI/CD pipelines
 
@@ -121,17 +121,17 @@ npm run dev
 
 The web app will be available at `http://127.0.0.1:5173`.
 
-During local development, Vite proxies `/api/*` requests to the FastAPI backend at
-`http://127.0.0.1:8000`, so the health indicator and future API calls work without
-extra CORS configuration. For production builds, set `VITE_API_BASE_URL` to your
-deployed API origin.
+During local development, Vite proxies `/api/*` and `/static/*` requests to the
+FastAPI backend at `http://127.0.0.1:8000`, so the health indicator, player, and
+demo audio work without extra CORS configuration. For production builds, set
+`VITE_API_BASE_URL` to your deployed API origin.
 
 **Frontend routes:**
 
 | Route | Purpose |
 |-------|---------|
 | `/` | Homepage with MusicBloom overview and player link |
-| `/player` | Visual player scaffold (full player not implemented yet) |
+| `/player` | Visual demo player with queue, controls, visualization, and listening events |
 | `/garden` | Garden preview shell |
 | `/quests` | Quest board scaffold |
 | `/achievements` | Achievement gallery scaffold |
@@ -147,6 +147,42 @@ npm run preview   # Preview production build
 npm run lint      # ESLint
 npm run test      # Vitest (add -- --run for CI-style single run)
 ```
+
+### Visual demo player
+
+Open `http://127.0.0.1:5173/player` with **both** the FastAPI API and Vite dev server
+running. The player:
+
+- Loads catalog metadata and player-session state from the backend REST API
+- Plays locally generated demo tones through the browser `<audio>` element
+- Visualizes frequency data with the Web Audio API (no microphone access; nothing is
+  uploaded to the server)
+- Sends `started`, `progress`, `completed`, and `skipped` listening events with
+  idempotency keys so the backend awards Melody Points and quest progress
+- Shows a demo-mode banner, keyboard-accessible controls, ARIA labels, and graceful
+  errors when demo audio files or fictional URLs are unavailable
+
+**Generate demo audio files** (included in the repo after running once):
+
+```bash
+python scripts/generate_demo_audio.py
+```
+
+The API serves files from `/static/demo/audio/*.wav`. Tracks with fictional
+`demo.musicbloom.local` URLs remain in the catalog to exercise unavailable-audio UI.
+
+**Typical flow:**
+
+1. Start the API and web dev servers.
+2. Visit `/player` and press **Play** on a track with local demo audio (for example
+   `Morning Dew Waltz`).
+3. Use transport controls, seek bar, volume, shuffle, repeat, queue panel, and track
+   browser.
+4. Confirm listening events arrive via `POST /api/v1/listening/events` and awards
+   appear in the player toast when granted by the server.
+
+Audio never autoplays without an explicit click. Awards are always calculated by the
+backend; the frontend only reports playback positions.
 
 ### Configuration
 

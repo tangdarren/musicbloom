@@ -1,5 +1,8 @@
 """Tests for the MusicBloom FastAPI application."""
 
+from pathlib import Path
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from musicbloom import __version__
@@ -60,3 +63,28 @@ def test_create_app_runs_database_initialization(test_engine) -> None:
     )
     with TestClient(application):
         assert application.title == API_TITLE
+
+
+def test_static_demo_audio_is_served(client: TestClient) -> None:
+    response = client.get("/static/demo/audio/morning-dew-waltz.wav")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("audio/")
+
+
+def test_create_app_skips_static_mount_when_directory_missing(
+    test_engine,
+) -> None:
+    static_dir = Path(__file__).resolve().parents[1] / "static"
+
+    with patch.object(Path, "is_dir", autospec=True) as is_dir:
+        is_dir.side_effect = lambda self: self != static_dir
+        application = create_app(
+            settings=Settings(demo_mode=True),
+            engine=test_engine,
+        )
+
+    with TestClient(application) as test_client:
+        response = test_client.get("/static/demo/audio/morning-dew-waltz.wav")
+
+    assert response.status_code == 404

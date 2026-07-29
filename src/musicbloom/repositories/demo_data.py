@@ -123,7 +123,7 @@ DEMO_TRACKS: tuple[Track, ...] = (
             local_path="/static/demo/artwork/morning-dew-waltz.png",
         ),
         audio=AudioSource(
-            local_path="/static/demo/audio/morning-dew-waltz.ogg",
+            local_path="/static/demo/audio/morning-dew-waltz.wav",
         ),
         mood=TrackMood.CALM,
         genre="acoustic garden",
@@ -161,7 +161,7 @@ DEMO_TRACKS: tuple[Track, ...] = (
             url="https://demo.musicbloom.local/artwork/mossy-footsteps.png",
         ),
         audio=AudioSource(
-            local_path="/static/demo/audio/mossy-footsteps.ogg",
+            local_path="/static/demo/audio/mossy-footsteps.wav",
         ),
         mood=TrackMood.COZY,
         genre="folk moss",
@@ -180,7 +180,7 @@ DEMO_TRACKS: tuple[Track, ...] = (
             local_path="/static/demo/artwork/bubblegum-breeze.png",
         ),
         audio=AudioSource(
-            local_path="/static/demo/audio/bubblegum-breeze.ogg",
+            local_path="/static/demo/audio/bubblegum-breeze.wav",
         ),
         mood=TrackMood.ENERGETIC,
         genre="chiptune petals",
@@ -199,7 +199,7 @@ DEMO_TRACKS: tuple[Track, ...] = (
             local_path="/static/demo/artwork/starlit-sprinkler.png",
         ),
         audio=AudioSource(
-            local_path="/static/demo/audio/starlit-sprinkler.ogg",
+            local_path="/static/demo/audio/starlit-sprinkler.wav",
         ),
         mood=TrackMood.DREAMY,
         genre="ambient dusk",
@@ -237,7 +237,7 @@ DEMO_TRACKS: tuple[Track, ...] = (
             local_path="/static/demo/artwork/fern-fanfare.png",
         ),
         audio=AudioSource(
-            local_path="/static/demo/audio/fern-fanfare.ogg",
+            local_path="/static/demo/audio/fern-fanfare.wav",
         ),
         mood=TrackMood.ENERGETIC,
         genre="brass garden",
