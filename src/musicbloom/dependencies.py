@@ -9,6 +9,13 @@ from sqlalchemy.orm import Session
 from musicbloom.config import Settings
 from musicbloom.db.init import get_demo_user
 from musicbloom.db.session import get_db
+from musicbloom.integrations.azure_devops.client import (
+    AzureDevOpsClient,
+    HttpAzureDevOpsClient,
+)
+from musicbloom.integrations.azure_devops.demo_provider import (
+    DemoDevOpsPipelineProvider,
+)
 from musicbloom.integrations.spotify.client import (
     HttpSpotifyOAuthClient,
     SpotifyOAuthClient,
@@ -35,6 +42,7 @@ from musicbloom.repositories.spotify_connection import SpotifyConnectionReposito
 from musicbloom.repositories.track_listening_state import TrackListeningStateRepository
 from musicbloom.repositories.user_progress import UserProgressRepository
 from musicbloom.services.catalog import CatalogService
+from musicbloom.services.devops import DevOpsService
 from musicbloom.services.garden import GardenService
 from musicbloom.services.player import PlayerService
 from musicbloom.services.progression import ProgressionService
@@ -221,3 +229,27 @@ SpotifyPlaybackServiceDep = Annotated[
     SpotifyPlaybackService,
     Depends(get_spotify_playback_service),
 ]
+
+
+def get_azure_devops_client(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AzureDevOpsClient:
+    """Return the Azure DevOps HTTP client."""
+    return HttpAzureDevOpsClient(
+        timeout_seconds=settings.azure_devops_request_timeout_seconds,
+    )
+
+
+def get_devops_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+    client: Annotated[AzureDevOpsClient, Depends(get_azure_devops_client)],
+) -> DevOpsService:
+    """Return Azure DevOps pipeline status service."""
+    return DevOpsService(
+        settings=settings,
+        client=client,
+        demo_provider=DemoDevOpsPipelineProvider(),
+    )
+
+
+DevOpsServiceDep = Annotated[DevOpsService, Depends(get_devops_service)]

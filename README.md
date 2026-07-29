@@ -22,9 +22,9 @@ A playful, garden-themed music experience that turns everyday listening into som
 
 Connect a Spotify account for live playback metadata and remote playback control. Demo mode continues to work without Spotify credentials.
 
-### Azure DevOps Integration *(planned)*
+### Azure DevOps Integration
 
-Use Azure DevOps for CI/CD pipelines, project tracking, and release automation as the project matures.
+Connect Azure Pipelines to power the **Dev Garden** with live build health for portfolio demos. Demo mode serves sample pipeline data without credentials.
 
 ## Technology Stack
 
@@ -66,6 +66,7 @@ This repository contains the **MusicBloom backend** and an initial **React web i
 - Interactive music garden with BloomBud mascot and decoration equip/unequip
 - Spotify account connection with encrypted OAuth token storage
 - Spotify playback metadata and remote control API (metadata only; no audio proxy)
+- Azure DevOps pipeline status API for Dev Garden build health (demo mode supported)
 - Visual demo music player with native audio, metadata visualization, and listening-event sync
 
 ## Local Setup
@@ -503,6 +504,51 @@ curl -X PUT "http://127.0.0.1:8000/api/v1/spotify/player/seek" \
 - The frontend displays metadata and playback state only. Audio continues to
   play through Spotify itself.
 - Demo mode and Spotify mode are separate. MusicBloom does not auto-switch modes.
+
+### Azure DevOps Pipeline Status
+
+The Azure DevOps integration powers the Dev Garden with normalized pipeline build
+health. Personal access tokens stay on the server and are never returned to clients.
+
+| Variable | Purpose |
+|----------|---------|
+| `MUSICBLOOM_AZURE_DEVOPS_ORG` | Azure DevOps organization name |
+| `MUSICBLOOM_AZURE_DEVOPS_PROJECT` | Azure DevOps project name |
+| `MUSICBLOOM_AZURE_DEVOPS_PIPELINE_ID` | Pipeline identifier to monitor |
+| `MUSICBLOOM_AZURE_DEVOPS_API_VERSION` | Azure DevOps REST API version (default `7.1`) |
+| `MUSICBLOOM_AZURE_DEVOPS_PAT` | Personal access token (server-side only) |
+| `MUSICBLOOM_AZURE_DEVOPS_REQUEST_TIMEOUT_SECONDS` | HTTP timeout for Azure DevOps requests |
+| `MUSICBLOOM_AZURE_DEVOPS_DEMO_MODE` | Serve demo pipeline data when `true` |
+| `MUSICBLOOM_AZURE_DEVOPS_RECENT_RUN_LIMIT` | Maximum recent runs returned by `/runs` |
+| `MUSICBLOOM_AZURE_DEVOPS_STATUS_CACHE_SECONDS` | Short-lived cache for `/status` |
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/devops/status` | Latest pipeline run and health snapshot |
+| `GET /api/v1/devops/runs` | Recent normalized pipeline runs |
+
+Example requests:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/devops/status"
+curl "http://127.0.0.1:8000/api/v1/devops/runs"
+```
+
+#### Azure DevOps setup notes
+
+1. Create a personal access token with **Build (Read)** scope.
+2. Set the organization, project, and pipeline ID environment variables.
+3. Set `MUSICBLOOM_AZURE_DEVOPS_DEMO_MODE=false` to fetch live pipeline data.
+4. Use `/api/v1/devops/status` in the Dev Garden to show build health.
+
+#### Azure DevOps limitations
+
+- Live data requires valid credentials and a readable pipeline ID.
+- When credentials are missing, MusicBloom serves demo pipeline data if app demo
+  mode or DevOps demo mode is enabled.
+- Authentication, authorization, rate limit, and temporary Azure DevOps failures
+  return safe JSON errors without exposing the PAT.
+- Status responses are cached briefly to reduce Azure DevOps API traffic.
 
 ## Validation Commands
 

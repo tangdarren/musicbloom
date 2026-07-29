@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from musicbloom.api.schemas import HealthResponse, build_health_response
 from musicbloom.api.v1.routes.albums import router as albums_router
 from musicbloom.api.v1.routes.artists import router as artists_router
+from musicbloom.api.v1.routes.devops import router as devops_router
 from musicbloom.api.v1.routes.garden import router as garden_router
 from musicbloom.api.v1.routes.listening import router as listening_router
 from musicbloom.api.v1.routes.player import router as player_router
@@ -26,6 +27,7 @@ router.include_router(quests_router)
 router.include_router(garden_router)
 router.include_router(spotify_auth_router)
 router.include_router(spotify_player_router)
+router.include_router(devops_router)
 
 
 @router.get(

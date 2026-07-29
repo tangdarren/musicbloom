@@ -23,6 +23,8 @@ SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_PROFILE_URL = "https://api.spotify.com/v1/me"
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 
+AZURE_DEVOPS_API_VERSION_DEFAULT = "7.1"
+
 OAUTH_STATE_COOKIE = "musicbloom_spotify_oauth_state"
 OAUTH_STATE_MAX_AGE_SECONDS = 600
 
@@ -69,6 +71,38 @@ class Settings(BaseSettings):
     )
     spotify_frontend_success_redirect: str = DEFAULT_SPOTIFY_SUCCESS_REDIRECT
     spotify_frontend_failure_redirect: str = DEFAULT_SPOTIFY_FAILURE_REDIRECT
+    azure_devops_org: str | None = None
+    azure_devops_project: str | None = None
+    azure_devops_pipeline_id: int | None = Field(default=None, ge=1)
+    azure_devops_api_version: str = AZURE_DEVOPS_API_VERSION_DEFAULT
+    azure_devops_pat: SecretStr | None = None
+    azure_devops_request_timeout_seconds: float = Field(default=10.0, ge=1.0, le=120.0)
+    azure_devops_demo_mode: bool = True
+    azure_devops_recent_run_limit: int = Field(default=5, ge=1, le=25)
+    azure_devops_status_cache_seconds: int = Field(default=30, ge=0, le=300)
+
+    @property
+    def azure_devops_configured(self) -> bool:
+        """Return True when Azure DevOps credentials are fully configured."""
+        return (
+            self.azure_devops_org is not None
+            and self.azure_devops_org.strip() != ""
+            and self.azure_devops_project is not None
+            and self.azure_devops_project.strip() != ""
+            and self.azure_devops_pipeline_id is not None
+            and self.azure_devops_pat is not None
+            and self.azure_devops_pat.get_secret_value().strip() != ""
+        )
+
+    @property
+    def resolved_azure_devops_pat(self) -> str | None:
+        """Return the configured Azure DevOps PAT when set."""
+        if self.azure_devops_pat is None:
+            return None
+        value = self.azure_devops_pat.get_secret_value().strip()
+        if not value:
+            return None
+        return value
 
     @property
     def spotify_configured(self) -> bool:
@@ -159,7 +193,9 @@ class Settings(BaseSettings):
             f"demo_mode={self.demo_mode!r}, cors_origins={self.cors_origins!r}, "
             f"secret_key={'**********' if self.secret_key else 'unset'}, "
             f"spotify_client_id={'set' if self.spotify_client_id else 'unset'}, "
-            f"spotify_client_secret={self._repr_spotify_client_secret()})"
+            f"spotify_client_secret={self._repr_spotify_client_secret()}, "
+            f"azure_devops_org={'set' if self.azure_devops_org else 'unset'}, "
+            f"azure_devops_pat={'**********' if self.azure_devops_pat else 'unset'})"
         )
 
     def _repr_spotify_client_secret(self) -> str:
