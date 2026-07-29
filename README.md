@@ -30,21 +30,27 @@ Use Azure DevOps for CI/CD pipelines, project tracking, and release automation a
 
 | Layer | Technology |
 |-------|------------|
-| Language | Python 3.12 |
+| Backend language | Python 3.12 |
 | API framework | FastAPI |
+| Frontend | React, TypeScript, Vite |
+| Frontend routing & data | React Router, TanStack Query |
 | Validation | Pydantic |
-| Testing | pytest, pytest-cov |
-| Linting | Ruff |
-| Type checking | mypy |
-| Package layout | `src/` layout |
+| Backend testing | pytest, pytest-cov |
+| Frontend testing | Vitest, React Testing Library |
+| Linting | Ruff (Python), ESLint (web) |
+| Type checking | mypy (Python), TypeScript (web) |
+| Package layout | `src/` layout (Python), `web/` (frontend) |
 
 ## Current Development Status
 
-This repository contains the **initial Python backend foundation only**.
+This repository contains the **MusicBloom backend** and an initial **React web interface** under `web/`.
 
 **Implemented today:**
 
 - FastAPI application with typed Pydantic response models
+- React + TypeScript frontend scaffold with garden-inspired UI shell
+- Typed API client, TanStack Query provider, and `/api/health` status indicator
+- Frontend routes for home, player, garden, quests, achievements, and dev garden
 - Typed application configuration via `pydantic-settings`
 - `GET /` — project metadata
 - `GET /api/health` — health check
@@ -61,7 +67,7 @@ This repository contains the **initial Python backend foundation only**.
 
 **Not yet implemented:**
 
-- Frontend / visual player
+- Full visual player UI (route scaffold only)
 - Spotify integration
 - Azure DevOps CI/CD pipelines
 
@@ -70,6 +76,7 @@ This repository contains the **initial Python backend foundation only**.
 ### Prerequisites
 
 - Python 3.12+
+- Node.js 20+ and npm
 - A virtual environment tool (`venv`, `uv`, etc.)
 
 ### Install
@@ -101,6 +108,46 @@ The API will be available at `http://127.0.0.1:8000`.
 - Versioned health: `http://127.0.0.1:8000/api/v1/health`
 - Interactive docs: `http://127.0.0.1:8000/docs`
 
+### Run the web interface
+
+In a second terminal, start the Vite dev server:
+
+```bash
+cd web
+cp .env.example .env
+npm install
+npm run dev
+```
+
+The web app will be available at `http://127.0.0.1:5173`.
+
+During local development, Vite proxies `/api/*` requests to the FastAPI backend at
+`http://127.0.0.1:8000`, so the health indicator and future API calls work without
+extra CORS configuration. For production builds, set `VITE_API_BASE_URL` to your
+deployed API origin.
+
+**Frontend routes:**
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Homepage with MusicBloom overview and player link |
+| `/player` | Visual player scaffold (full player not implemented yet) |
+| `/garden` | Garden preview shell |
+| `/quests` | Quest board scaffold |
+| `/achievements` | Achievement gallery scaffold |
+| `/dev-garden` | Developer sandbox for garden experiments |
+
+**Frontend commands:**
+
+```bash
+cd web
+npm run dev       # Start Vite dev server
+npm run build     # Production build
+npm run preview   # Preview production build
+npm run lint      # ESLint
+npm run test      # Vitest (add -- --run for CI-style single run)
+```
+
 ### Configuration
 
 MusicBloom loads settings from environment variables (and an optional `.env` file)
@@ -119,7 +166,7 @@ cp .env.example .env
 | `MUSICBLOOM_DEMO_MODE` | `true` | Enable demo-mode behavior (disabled automatically in production) |
 | `MUSICBLOOM_API_HOST` | `0.0.0.0` | Host address for the API server |
 | `MUSICBLOOM_API_PORT` | `8000` | Port for the API server |
-| `MUSICBLOOM_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated allowed CORS origins |
+| `MUSICBLOOM_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173` | Comma-separated allowed CORS origins |
 | `MUSICBLOOM_SECRET_KEY` | *(unset)* | Application secret; **required in production** (minimum 32 characters) |
 | `MUSICBLOOM_DATABASE_URL` | `sqlite:///./musicbloom.db` | SQLAlchemy database URL (SQLite or PostgreSQL) |
 
@@ -357,7 +404,13 @@ Run these from the project root with your virtual environment activated:
 python -m pytest
 python -m ruff check .
 python -m mypy src
+cd web && npm run lint
+cd web && npm run test -- --run
+cd web && npm run build
 ```
+
+Install frontend dependencies first with `cd web && npm install` if you have not
+already done so.
 
 ## Project Structure
 

@@ -38,3 +38,6 @@ Thumbs.db
 # Local SQLite database
 *.db
 musicbloom.db
+
+# Frontend
+web/node_modules/
