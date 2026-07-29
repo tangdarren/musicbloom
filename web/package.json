@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",

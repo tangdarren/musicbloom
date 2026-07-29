@@ -24,8 +24,11 @@ dist/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+test-results/
+coverage/
 
-# IDE
+# Frontend build output
+web/dist/
 .idea/
 .vscode/
 *.swp

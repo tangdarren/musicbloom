@@ -23,5 +23,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
     css: true,
+    testTimeout: 15_000,
+    pool: "forks",
+    maxWorkers: 1,
+    fileParallelism: false,
   },
 });

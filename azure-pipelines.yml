@@ -1,0 +1,261 @@
+# MusicBloom validation pipeline
+# Validates backend and frontend quality on changes targeting main.
+# No Spotify or Azure DevOps secrets are stored in this file.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  pythonVersion: "3.12"
+  nodeVersion: "20.x"
+
+stages:
+  - stage: BackendQuality
+    displayName: Backend quality
+    jobs:
+      - job: BackendLintAndTypecheck
+        displayName: Ruff and mypy
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+
+          - task: Cache@2
+            displayName: Cache pip packages
+            inputs:
+              key: 'pip | "$(Agent.OS)" | pyproject.toml'
+              restoreKeys: |
+                pip | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.pip-cache
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install --cache-dir $(Pipeline.Workspace)/.pip-cache -e ".[dev]"
+            displayName: Install Python dependencies
+
+          - script: python -m ruff check .
+            displayName: Run Ruff
+
+          - script: python -m mypy src
+            displayName: Run mypy
+
+  - stage: BackendTests
+    displayName: Backend tests
+    dependsOn: BackendQuality
+    jobs:
+      - job: BackendPytest
+        displayName: pytest with coverage
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+
+          - task: Cache@2
+            displayName: Cache pip packages
+            inputs:
+              key: 'pip | "$(Agent.OS)" | pyproject.toml'
+              restoreKeys: |
+                pip | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.pip-cache
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install --cache-dir $(Pipeline.Workspace)/.pip-cache -e ".[dev]"
+            displayName: Install Python dependencies
+
+          - script: |
+              mkdir -p test-results coverage
+              python -m pytest \
+                --junitxml=test-results/junit.xml \
+                --cov-report=xml:coverage/coverage.xml \
+                --cov-report=term-missing
+            displayName: Run pytest
+            env:
+              MUSICBLOOM_DEMO_MODE: "true"
+
+          - task: PublishTestResults@2
+            displayName: Publish pytest results
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: test-results/junit.xml
+              mergeTestResults: true
+              testRunTitle: MusicBloom backend tests
+            condition: succeededOrFailed()
+
+          - task: PublishCodeCoverageResults@2
+            displayName: Publish coverage results
+            inputs:
+              summaryFileLocation: coverage/coverage.xml
+            condition: succeededOrFailed()
+
+  - stage: FrontendQuality
+    displayName: Frontend quality
+    jobs:
+      - job: FrontendLintAndTypecheck
+        displayName: ESLint and TypeScript
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - task: Cache@2
+            displayName: Cache npm packages
+            inputs:
+              key: 'npm | "$(Agent.OS)" | web/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.npm-cache
+
+          - script: |
+              cd web
+              npm ci --cache $(Pipeline.Workspace)/.npm-cache --prefer-offline
+            displayName: Install frontend dependencies
+
+          - script: |
+              cd web
+              npm run lint
+            displayName: Run ESLint
+
+          - script: |
+              cd web
+              npm run typecheck
+            displayName: Run TypeScript
+
+  - stage: FrontendTests
+    displayName: Frontend tests
+    dependsOn: FrontendQuality
+    jobs:
+      - job: FrontendVitest
+        displayName: Vitest
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - task: Cache@2
+            displayName: Cache npm packages
+            inputs:
+              key: 'npm | "$(Agent.OS)" | web/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.npm-cache
+
+          - script: |
+              cd web
+              npm ci --cache $(Pipeline.Workspace)/.npm-cache --prefer-offline
+            displayName: Install frontend dependencies
+
+          - script: |
+              mkdir -p test-results
+              cd web
+              npm run test -- --run --reporter=junit --outputFile=../test-results/frontend-junit.xml
+            displayName: Run Vitest
+
+          - task: PublishTestResults@2
+            displayName: Publish Vitest results
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: test-results/frontend-junit.xml
+              mergeTestResults: true
+              testRunTitle: MusicBloom frontend tests
+            condition: succeededOrFailed()
+
+  - stage: ProductionBuilds
+    displayName: Production builds
+    dependsOn:
+      - BackendTests
+      - FrontendTests
+    jobs:
+      - job: BuildArtifacts
+        displayName: Package, frontend, and Docker
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - task: Cache@2
+            displayName: Cache pip packages
+            inputs:
+              key: 'pip | "$(Agent.OS)" | pyproject.toml'
+              restoreKeys: |
+                pip | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.pip-cache
+
+          - task: Cache@2
+            displayName: Cache npm packages
+            inputs:
+              key: 'npm | "$(Agent.OS)" | web/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.npm-cache
+
+          - script: |
+              python -m pip install --upgrade pip build
+              pip install --cache-dir $(Pipeline.Workspace)/.pip-cache -e ".[dev]"
+              python -m build
+            displayName: Build Python package
+
+          - script: |
+              cd web
+              npm ci --cache $(Pipeline.Workspace)/.npm-cache --prefer-offline
+              npm run build
+            displayName: Build production frontend
+
+          - script: |
+              docker build -t musicbloom:ci .
+              docker run --rm musicbloom:ci python -c "import musicbloom; print(musicbloom.__version__)"
+            displayName: Validate Docker image
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Python dist artifacts
+            inputs:
+              targetPath: dist
+              artifact: python-dist
+              publishLocation: pipeline
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish frontend dist artifacts
+            inputs:
+              targetPath: web/dist
+              artifact: web-dist
+              publishLocation: pipeline
+
+  - stage: Publish
+    displayName: Package and artifact publishing
+    dependsOn: ProductionBuilds
+    jobs:
+      - job: PublishSummary
+        displayName: Publish build summary
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - download: current
+            artifact: python-dist
+          - download: current
+            artifact: web-dist
+          - script: |
+              echo "MusicBloom portfolio validation completed."
+              echo "Python package artifacts and web/dist are available as pipeline artifacts."
+              echo "Deployment to production is intentionally not configured yet."
+            displayName: Summarize published artifacts

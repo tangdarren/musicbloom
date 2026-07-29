@@ -2,7 +2,70 @@
 
 **Grow your music garden, one song at a time.**
 
-MusicBloom is a cutesy, gamified visual music player where listening grows a virtual garden, earns Melody Points, completes quests, unlocks decorations, and affects a mascot named **BloomBud**.
+MusicBloom is a portfolio-ready, full-stack application that turns listening into a
+playful garden adventure. It combines a React visual player, FastAPI backend,
+gamified progression, optional Spotify metadata integration, and an Azure DevOps
+**Dev Garden** that shows CI health for recruiters and collaborators.
+
+## Overview
+
+MusicBloom demonstrates modern product engineering practices:
+
+- Typed Python and TypeScript across the stack
+- 100% backend test coverage with pytest
+- Frontend integration tests with Vitest and React Testing Library
+- Optional integrations that degrade gracefully in demo mode
+- Azure Pipelines validation for backend, frontend, builds, and artifacts
+- Dockerized demo deployment without production secrets in source control
+
+## Screenshots
+
+> Placeholder paths for portfolio screenshots. Replace these with real captures
+> after running the app locally or in Docker.
+
+| Screen | Placeholder |
+|--------|-------------|
+| Visual player | `docs/screenshots/player.png` |
+| Listening garden | `docs/screenshots/garden.png` |
+| Dev Garden | `docs/screenshots/dev-garden.png` |
+| Quest board | `docs/screenshots/quests.png` |
+
+## Feature summary
+
+| Area | Highlights |
+|------|------------|
+| Visual player | Demo audio, queue, visualization, keyboard controls, listening-event sync |
+| Garden & gamification | Melody Points, quests, achievements, decorations, BloomBud mascot |
+| Spotify (optional) | OAuth connection, playback metadata, remote controls, no audio proxy |
+| Dev Garden | Azure Pipelines health scene separate from the listening garden |
+| API | Versioned FastAPI REST API with OpenAPI docs |
+| Persistence | SQLAlchemy 2, Alembic migrations, SQLite or PostgreSQL |
+| CI/CD | Azure Pipelines lint, typecheck, tests, builds, artifacts |
+| Containers | Multi-stage Docker image and docker-compose demo stack |
+
+## Architecture
+
+```mermaid
+flowchart TB
+    UI[React Visual Player]
+    API[FastAPI REST API]
+    Demo[Demo Music Service]
+    Spotify[Spotify Integration]
+    Progress[Progress and Quest Engine]
+    Repos[SQLAlchemy Repositories]
+    DevOps[Azure DevOps REST Client]
+    DB[(SQLite / PostgreSQL)]
+
+    UI --> API
+    API --> Demo
+    API --> Spotify
+    API --> Progress
+    API --> Repos
+    API --> DevOps
+    Repos --> DB
+```
+
+See [docs/architecture.md](docs/architecture.md) for a deeper architecture guide.
 
 ## Vision
 
@@ -70,7 +133,7 @@ This repository contains the **MusicBloom backend** and an initial **React web i
 - Dev Garden frontend that visualizes Azure Pipelines status separately from the listening garden
 - Visual demo music player with native audio, metadata visualization, and listening-event sync
 
-## Local Setup
+## Local development
 
 ### Prerequisites
 
@@ -88,6 +151,8 @@ source .venv/bin/activate   # macOS / Linux
 
 # Install the package with development dependencies
 pip install -e ".[dev]"
+cp .env.example .env
+alembic upgrade head
 ```
 
 ### Run the API
@@ -114,7 +179,7 @@ In a second terminal, start the Vite dev server:
 ```bash
 cd web
 cp .env.example .env
-npm install
+npm ci
 npm run dev
 ```
 
@@ -134,7 +199,7 @@ demo audio work without extra CORS configuration. For production builds, set
 | `/garden` | Garden preview shell |
 | `/quests` | Quest board scaffold |
 | `/achievements` | Achievement gallery scaffold |
-| `/dev-garden` | Developer sandbox for garden experiments |
+| `/dev-garden` | Azure DevOps Dev Garden with BloomBud pipeline scenes |
 
 **Frontend commands:**
 
@@ -144,6 +209,7 @@ npm run dev       # Start Vite dev server
 npm run build     # Production build
 npm run preview   # Preview production build
 npm run lint      # ESLint
+npm run typecheck # TypeScript project references
 npm run test      # Vitest (add -- --run for CI-style single run)
 ```
 
@@ -567,85 +633,191 @@ answers a different question: "Are the builds healthy right now?"
 Open `/dev-garden` in the web app to see the latest pipeline result, recent run
 history, success-rate summary, and a safe link back to the Azure DevOps build.
 
-## Validation Commands
+## Demo mode setup
+
+MusicBloom defaults to demo mode so the entire app works without Spotify or
+Azure DevOps credentials.
+
+```bash
+cp .env.example .env
+# Keep MUSICBLOOM_DEMO_MODE=true for local development
+```
+
+Demo mode provides:
+
+- Fictional demo catalog tracks and locally generated WAV audio
+- Seeded demo user, garden, quests, and achievements
+- Spotify endpoints that return safe disconnected/configured states
+- Dev Garden demo pipeline scenes when Azure DevOps is not configured
+
+For production-style configuration, set `MUSICBLOOM_ENVIRONMENT=production`,
+provide a 32+ character `MUSICBLOOM_SECRET_KEY`, disable demo/debug mode, and
+configure a PostgreSQL `MUSICBLOOM_DATABASE_URL`.
+
+## REST API overview
+
+| Group | Base path | Purpose |
+|-------|-----------|---------|
+| Health | `/`, `/api/health`, `/api/v1/health` | Service metadata and health |
+| Catalog | `/api/v1/tracks`, `/artists`, `/albums` | Demo music metadata |
+| Player | `/api/v1/player` | Demo playback session state |
+| Listening | `/api/v1/listening/events` | Idempotent listening events |
+| Progress | `/api/v1/progress`, `/stats`, `/streak` | Melody Points and levels |
+| Quests | `/api/v1/quests`, `/achievements`, `/rewards` | Gamification |
+| Garden | `/api/v1/garden`, `/decorations` | Garden profile and decorations |
+| Spotify auth | `/api/v1/auth/spotify` | OAuth connection lifecycle |
+| Spotify player | `/api/v1/spotify/player` | Playback metadata and controls |
+| DevOps | `/api/v1/devops` | Pipeline status for Dev Garden |
+
+Interactive OpenAPI documentation is available at `http://127.0.0.1:8000/docs`.
+
+## Testing
+
+### Backend
+
+```bash
+python -m ruff check .
+python -m mypy src
+python -m pytest
+```
+
+Backend tests use an isolated in-memory SQLite database and require no external
+credentials.
+
+### Frontend
+
+```bash
+cd web
+npm run lint
+npm run typecheck
+npm run typecheck
+npm run test -- --run
+npm run build
+```
+
+## Azure Pipelines
+
+The repository includes [`azure-pipelines.yml`](azure-pipelines.yml) with
+separate stages for:
+
+1. Backend quality — Ruff and mypy
+2. Backend tests — pytest with coverage and published results
+3. Frontend quality — ESLint and TypeScript
+4. Frontend tests — Vitest with published JUnit results
+5. Production builds — Python package, frontend build, Docker validation
+6. Publish — pipeline artifacts for `dist/` and `web/dist/`
+
+The pipeline triggers on pushes and pull requests targeting `main`. It does not
+deploy to production yet and never stores Spotify or Azure DevOps secrets in YAML.
+
+## Docker
+
+Build and run the API container:
+
+```bash
+docker build -t musicbloom:local .
+docker run --rm -p 8000:8000 musicbloom:local
+```
+
+Run the portfolio demo stack with API and nginx frontend:
+
+```bash
+docker compose up --build
+```
+
+- API: `http://127.0.0.1:8000`
+- Frontend: `http://127.0.0.1:8080`
+
+## Security practices
+
+- Secrets are loaded from environment variables using `SecretStr`
+- Spotify and Azure DevOps tokens never reach the browser
+- Secret redaction helpers sanitize integration error messages
+- Production configuration rejects weak or missing secret keys
+- See [SECURITY.md](SECURITY.md) for the vulnerability reporting policy
+
+## Project roadmap
+
+| Milestone | Status |
+|-----------|--------|
+| Demo player and catalog | Done |
+| Progression, quests, and garden systems | Done |
+| Spotify OAuth and playback metadata | Done |
+| Azure DevOps Dev Garden | Done |
+| Azure Pipelines CI and Docker demo | Done |
+| Multi-user authentication | Planned |
+| Production deployment workflow | Planned |
+| Expanded quest and achievement UI | Planned |
+| Mobile-responsive polish pass | Planned |
+
+## Known limitations
+
+- Single demo user; no account registration or login yet
+- Spotify and Azure DevOps integrations are optional and metadata-only
+- Quest and achievement pages are partly scaffold-level UI
+- CI validates builds and publishes artifacts but does not deploy production
+- Docker demo stack is intended for local portfolio review, not hardened hosting
+
+## Validation commands
 
 Run these from the project root with your virtual environment activated:
 
 ```bash
-python -m pytest
 python -m ruff check .
 python -m mypy src
+python -m pytest
+python -m build
+cd web && npm ci
 cd web && npm run lint
+cd web && npm run typecheck
 cd web && npm run test -- --run
 cd web && npm run build
+docker build -t musicbloom:local .
 ```
 
-Install frontend dependencies first with `cd web && npm install` if you have not
+Install frontend dependencies first with `cd web && npm ci` if you have not
 already done so.
 
-## Project Structure
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation expectations, and
+pull request guidance.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+## Project structure
 
 ```
 musicbloom/
-├── .cursor/
-│   └── rules/
-│       └── manual-git.mdc
-├── src/
-│   └── musicbloom/
-│       ├── __init__.py
-│       ├── constants.py
-│       ├── config.py
-│       ├── dependencies.py
-│       ├── main.py
-│       ├── models/
-│       │   ├── __init__.py
-│       │   ├── catalog.py
-│       │   └── player.py
-│       ├── repositories/
-│       │   ├── __init__.py
-│       │   ├── demo_catalog.py
-│       │   ├── demo_data.py
-│       │   ├── in_memory_player.py
-│       │   └── player.py
-│       ├── services/
-│       │   ├── __init__.py
-│       │   ├── catalog.py
-│       │   ├── player.py
-│       │   └── player_errors.py
-│       └── api/
-│           ├── __init__.py
-│           ├── app.py
-│           ├── schemas.py
-│           └── v1/
-│               ├── __init__.py
-│               ├── router.py
-│               ├── routes/
-│               │   ├── __init__.py
-│               │   ├── albums.py
-│               │   ├── artists.py
-│               │   ├── player.py
-│               │   └── tracks.py
-│               └── schemas/
-│                   ├── __init__.py
-│                   ├── catalog.py
-│                   └── player.py
+├── azure-pipelines.yml
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── docker/
+│   └── nginx.conf
+├── docker-compose.yml
+├── Dockerfile
+├── docs/
+│   └── architecture.md
+├── alembic/
+├── scripts/
+├── src/musicbloom/
+│   ├── api/
+│   ├── integrations/
+│   ├── models/
+│   ├── repositories/
+│   ├── services/
+│   └── security/
+├── static/
 ├── tests/
-│   ├── __init__.py
-│   ├── conftest.py
-│   ├── test_app.py
-│   ├── test_catalog_api.py
-│   ├── test_catalog_models.py
-│   ├── test_catalog_repository.py
-│   ├── test_catalog_service.py
-│   ├── test_config.py
-│   ├── test_player_api.py
-│   ├── test_player_models.py
-│   ├── test_player_repository.py
-│   └── test_player_service.py
+├── web/
+│   ├── src/
+│   └── package-lock.json
 ├── .env.example
-├── .gitignore
 ├── pyproject.toml
-└── README.md
+├── README.md
+└── SECURITY.md
 ```
 
 ## License
