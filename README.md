@@ -50,6 +50,7 @@ This repository contains the **initial Python backend foundation only**.
 - `GET /api/health` — health check
 - `GET /api/v1/health` — versioned health check
 - Demo music catalog API with fictional tracks, artists, and albums
+- Player session API for demo playback control (metadata only; client-side audio)
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
 - Test suite for endpoints, configuration, and application metadata
@@ -168,6 +169,46 @@ curl "http://127.0.0.1:8000/api/v1/artists"
 curl "http://127.0.0.1:8000/api/v1/albums"
 ```
 
+### Player Session API
+
+The player session API tracks **playback metadata only**. It does not stream audio;
+the future browser client will play demo catalog files locally based on the returned
+`audio` references.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/player` | Current player session state |
+| `PUT /api/v1/player/play` | Play a track or resume/start queue playback |
+| `PUT /api/v1/player/pause` | Pause the active track |
+| `PUT /api/v1/player/seek` | Seek within the active track |
+| `PUT /api/v1/player/volume` | Set normalized volume (`0.0`–`1.0`) |
+| `PUT /api/v1/player/shuffle` | Enable or disable shuffle mode |
+| `PUT /api/v1/player/repeat` | Set repeat mode (`off`, `one`, `all`) |
+| `POST /api/v1/player/next` | Advance to the next queue item |
+| `POST /api/v1/player/previous` | Restart or move to the previous queue item |
+| `POST /api/v1/player/queue` | Append a demo catalog track to the queue |
+| `DELETE /api/v1/player/queue/{track_id}` | Remove a track from the queue |
+
+Example requests:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/player"
+curl -X PUT "http://127.0.0.1:8000/api/v1/player/play" \
+  -H "Content-Type: application/json" \
+  -d '{"track_id":"demo-track-001"}'
+curl -X POST "http://127.0.0.1:8000/api/v1/player/queue" \
+  -H "Content-Type: application/json" \
+  -d '{"track_id":"demo-track-002"}'
+curl -X PUT "http://127.0.0.1:8000/api/v1/player/seek" \
+  -H "Content-Type: application/json" \
+  -d '{"position_ms":30000}'
+curl -X POST "http://127.0.0.1:8000/api/v1/player/next"
+```
+
+Duplicate queue entries are rejected unless `allow_duplicate` is set to `true`.
+Seek positions and volume values are validated; unknown tracks and queue items
+return `404`, and invalid playback actions return useful `4xx` responses.
+
 ## Validation Commands
 
 Run these from the project root with your virtual environment activated:
@@ -194,14 +235,19 @@ musicbloom/
 │       ├── main.py
 │       ├── models/
 │       │   ├── __init__.py
-│       │   └── catalog.py
+│       │   ├── catalog.py
+│       │   └── player.py
 │       ├── repositories/
 │       │   ├── __init__.py
 │       │   ├── demo_catalog.py
-│       │   └── demo_data.py
+│       │   ├── demo_data.py
+│       │   ├── in_memory_player.py
+│       │   └── player.py
 │       ├── services/
 │       │   ├── __init__.py
-│       │   └── catalog.py
+│       │   ├── catalog.py
+│       │   ├── player.py
+│       │   └── player_errors.py
 │       └── api/
 │           ├── __init__.py
 │           ├── app.py
@@ -213,10 +259,12 @@ musicbloom/
 │               │   ├── __init__.py
 │               │   ├── albums.py
 │               │   ├── artists.py
+│               │   ├── player.py
 │               │   └── tracks.py
 │               └── schemas/
 │                   ├── __init__.py
-│                   └── catalog.py
+│                   ├── catalog.py
+│                   └── player.py
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py
@@ -225,7 +273,11 @@ musicbloom/
 │   ├── test_catalog_models.py
 │   ├── test_catalog_repository.py
 │   ├── test_catalog_service.py
-│   └── test_config.py
+│   ├── test_config.py
+│   ├── test_player_api.py
+│   ├── test_player_models.py
+│   ├── test_player_repository.py
+│   └── test_player_service.py
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml

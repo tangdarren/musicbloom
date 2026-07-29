@@ -9,6 +9,7 @@ from musicbloom.api.schemas import (
     build_health_response,
     build_root_response,
 )
+from musicbloom.api.v1.player_handlers import register_player_exception_handlers
 from musicbloom.api.v1.router import router as v1_router
 from musicbloom.config import Settings
 from musicbloom.constants import API_DESCRIPTION, API_TITLE, __version__
@@ -35,6 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     application.include_router(v1_router, prefix="/api/v1")
+    register_player_exception_handlers(application)
 
     @application.get("/", response_model=RootResponse)
     def read_root() -> RootResponse:
