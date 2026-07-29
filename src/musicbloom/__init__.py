@@ -1,3 +1,5 @@
 """MusicBloom — a gamified visual music player backend."""
 
-__version__ = "0.1.0"
+from musicbloom.constants import __version__
+
+__all__ = ["__version__"]

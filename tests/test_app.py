@@ -3,7 +3,8 @@
 from fastapi.testclient import TestClient
 
 from musicbloom import __version__
-from musicbloom.api.app import API_TITLE, SERVICE_NAME, app
+from musicbloom.api.app import app, create_app
+from musicbloom.constants import API_TITLE, SERVICE_NAME
 
 client = TestClient(app)
 
@@ -39,6 +40,24 @@ def test_health_endpoint_response_structure() -> None:
     }
 
 
+def test_v1_health_endpoint() -> None:
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "healthy",
+        "service": SERVICE_NAME,
+    }
+
+
 def test_fastapi_metadata() -> None:
     assert app.title == API_TITLE
     assert app.version == __version__
+
+
+def test_create_app_uses_provided_settings() -> None:
+    from musicbloom.config import Settings
+
+    settings = Settings(debug=False, cors_origins=["https://example.com"])
+    test_app = create_app(settings=settings)
+
+    assert test_app.debug is False

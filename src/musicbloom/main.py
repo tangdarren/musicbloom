@@ -2,14 +2,17 @@
 
 import uvicorn
 
+from musicbloom.dependencies import get_settings
+
 
 def main() -> None:
     """Start the development server."""
+    settings = get_settings()
     uvicorn.run(
         "musicbloom.api.app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.debug,
     )
 
 
