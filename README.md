@@ -49,6 +49,7 @@ This repository contains the **initial Python backend foundation only**.
 - `GET /` — project metadata
 - `GET /api/health` — health check
 - `GET /api/v1/health` — versioned health check
+- Demo music catalog API with fictional tracks, artists, and albums
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
 - Test suite for endpoints, configuration, and application metadata
@@ -129,6 +130,44 @@ to avoid accidental exposure in logs.
 Settings are cached through `musicbloom.dependencies.get_settings()` and injected
 where needed by the application factory.
 
+### Demo Catalog API
+
+MusicBloom ships with a deterministic demo music catalog so the visual player can
+be developed without Spotify credentials. All tracks use **fictional artists,
+albums, and audio paths** — no copyrighted music is bundled or referenced.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/tracks` | Paginated demo track collection with optional filters |
+| `GET /api/v1/tracks/{track_id}` | Single demo track by stable ID |
+| `GET /api/v1/artists` | All demo artists |
+| `GET /api/v1/albums` | All demo albums |
+
+**Track list query parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `page` | `1` | Page number (minimum 1) |
+| `page_size` | `20` | Items per page (1–100) |
+| `artist` | — | Filter by artist name or ID |
+| `album` | — | Filter by album title or ID |
+| `genre` | — | Filter by genre label |
+| `mood` | — | Filter by mood (`calm`, `playful`, `dreamy`, `energetic`, `cozy`, `mysterious`) |
+
+Each track includes stable metadata for the future visual player: duration,
+artwork, audio source, mood, genre, accent theme colors, and whether it is
+playable in demo mode.
+
+Example requests:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/tracks?page=1&page_size=3"
+curl "http://127.0.0.1:8000/api/v1/tracks/demo-track-001"
+curl "http://127.0.0.1:8000/api/v1/tracks?mood=energetic&genre=brass"
+curl "http://127.0.0.1:8000/api/v1/artists"
+curl "http://127.0.0.1:8000/api/v1/albums"
+```
+
 ## Validation Commands
 
 Run these from the project root with your virtual environment activated:
@@ -153,17 +192,39 @@ musicbloom/
 │       ├── config.py
 │       ├── dependencies.py
 │       ├── main.py
+│       ├── models/
+│       │   ├── __init__.py
+│       │   └── catalog.py
+│       ├── repositories/
+│       │   ├── __init__.py
+│       │   ├── demo_catalog.py
+│       │   └── demo_data.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   └── catalog.py
 │       └── api/
 │           ├── __init__.py
 │           ├── app.py
 │           ├── schemas.py
 │           └── v1/
 │               ├── __init__.py
-│               └── router.py
+│               ├── router.py
+│               ├── routes/
+│               │   ├── __init__.py
+│               │   ├── albums.py
+│               │   ├── artists.py
+│               │   └── tracks.py
+│               └── schemas/
+│                   ├── __init__.py
+│                   └── catalog.py
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py
 │   ├── test_app.py
+│   ├── test_catalog_api.py
+│   ├── test_catalog_models.py
+│   ├── test_catalog_repository.py
+│   ├── test_catalog_service.py
 │   └── test_config.py
 ├── .env.example
 ├── .gitignore
