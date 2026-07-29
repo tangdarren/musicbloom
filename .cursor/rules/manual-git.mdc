@@ -1,0 +1,25 @@
+---
+description: Prohibit all Git operations — the user manages version control manually
+alwaysApply: true
+---
+
+# Manual Git Only
+
+The user performs every Git operation manually. Cursor must never run Git commands.
+
+## Forbidden Commands
+
+Do not run any of the following, including as part of suggested terminal workflows:
+
+- `git add`, `git commit`, `git push`, `git pull`, `git merge`
+- `git checkout`, `git switch`, `git reset`, `git rebase`
+- `git status`, `git diff`, `git log`, `git stash`
+- Any command that creates, deletes, or changes branches
+- Any command that modifies Git history or Git configuration
+
+## Required Behavior
+
+- Do not stage, commit, push, merge, or switch branches.
+- Do not update `.git/config` or any Git hooks.
+- When work is complete, summarize changes and suggest a commit message for the user to apply manually.
+- Never claim that changes have been committed or pushed.
