@@ -27,6 +27,7 @@ from musicbloom.db.models.melody_points_transaction import MelodyPointsTransacti
 from musicbloom.db.models.player_session import PlayerSessionRecord
 from musicbloom.db.models.quest_progress import QuestProgress
 from musicbloom.db.models.reward_claim import RewardClaim
+from musicbloom.db.models.spotify_connection import SpotifyConnectionRecord
 from musicbloom.db.models.track_listening_state import TrackListeningState
 from musicbloom.db.models.user_progress import UserProgress
 from musicbloom.db.session import create_test_database_engine, get_db
@@ -146,6 +147,7 @@ def _reset_demo_progression_state(factory: sessionmaker[Session]) -> None:
             RewardClaim,
             DecorationUnlockRecord,
             EquippedDecoration,
+            SpotifyConnectionRecord,
             QuestProgress,
             AchievementProgress,
             MelodyPointsTransaction,

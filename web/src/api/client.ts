@@ -190,4 +190,12 @@ export const apiClient = {
     ),
   unequipDecoration: (decorationId: string) =>
     apiDelete<void>(`/api/v1/garden/decorations/${decorationId}/equip`),
+  getSpotifyStatus: () =>
+    apiGet<import("./spotifyTypes").SpotifyConnectionStatus>(
+      "/api/v1/auth/spotify/status",
+    ),
+  disconnectSpotify: () =>
+    apiDelete<import("./spotifyTypes").SpotifyDisconnectResult>(
+      "/api/v1/auth/spotify",
+    ),
 };

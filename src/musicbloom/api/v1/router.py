@@ -10,6 +10,7 @@ from musicbloom.api.v1.routes.listening import router as listening_router
 from musicbloom.api.v1.routes.player import router as player_router
 from musicbloom.api.v1.routes.progress import router as progress_router
 from musicbloom.api.v1.routes.quests import router as quests_router
+from musicbloom.api.v1.routes.spotify_auth import router as spotify_auth_router
 from musicbloom.api.v1.routes.tracks import router as tracks_router
 
 router = APIRouter(tags=["v1"])
@@ -22,6 +23,7 @@ router.include_router(listening_router)
 router.include_router(progress_router)
 router.include_router(quests_router)
 router.include_router(garden_router)
+router.include_router(spotify_auth_router)
 
 
 @router.get(

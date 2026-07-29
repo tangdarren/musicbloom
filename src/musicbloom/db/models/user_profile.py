@@ -12,6 +12,7 @@ from musicbloom.db.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from musicbloom.db.models.garden_profile import GardenProfile
     from musicbloom.db.models.player_session import PlayerSessionRecord
+    from musicbloom.db.models.spotify_connection import SpotifyConnectionRecord
     from musicbloom.db.models.user_progress import UserProgress
 
 
@@ -35,6 +36,10 @@ class UserProfile(Base, TimestampMixin):
         uselist=False,
     )
     progress: Mapped[UserProgress | None] = relationship(
+        back_populates="user",
+        uselist=False,
+    )
+    spotify_connection: Mapped[SpotifyConnectionRecord | None] = relationship(
         back_populates="user",
         uselist=False,
     )

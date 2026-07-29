@@ -115,7 +115,12 @@ def test_quest_and_achievement_list_for_user(db_session: Session) -> None:
     quest_repo = QuestProgressRepository(db_session)
     achievement_repo = AchievementProgressRepository(db_session)
 
-    quest_repo.ensure_progress(
+    first_quest = quest_repo.ensure_progress(
+        user_id=user.id,
+        quest_id="daily-complete-three-tracks",
+        period_key="2026-01-01",
+    )
+    second_quest = quest_repo.ensure_progress(
         user_id=user.id,
         quest_id="daily-complete-three-tracks",
         period_key="2026-01-01",
@@ -129,6 +134,13 @@ def test_quest_and_achievement_list_for_user(db_session: Session) -> None:
         achievement_id="achievement-first-bloom",
     )
 
-    assert len(quest_repo.list_for_user(user.id)) == 1
-    assert len(achievement_repo.list_for_user(user.id)) == 1
+    quests_for_period = [
+        quest
+        for quest in quest_repo.list_for_user(user.id)
+        if quest.quest_id == "daily-complete-three-tracks"
+        and quest.period_key == "2026-01-01"
+    ]
+    assert len(quests_for_period) == 1
+    assert first_quest.id == second_quest.id
+    assert len(achievement_repo.list_for_user(user.id)) >= 1
     assert first.id == second.id

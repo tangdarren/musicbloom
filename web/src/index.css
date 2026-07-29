@@ -383,6 +383,47 @@ h1 {
   }
 }
 
+.home-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.spotify-panel {
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 1rem;
+}
+
+.spotify-panel__header h2 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.spotify-panel__status {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.spotify-panel__badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: var(--color-bg-accent);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.spotify-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 @media (max-width: 640px) {
   .top-nav__links {
     overflow-x: auto;

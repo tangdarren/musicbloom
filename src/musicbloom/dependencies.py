@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 from musicbloom.config import Settings
 from musicbloom.db.init import get_demo_user
 from musicbloom.db.session import get_db
+from musicbloom.integrations.spotify.client import (
+    HttpSpotifyOAuthClient,
+    SpotifyOAuthClient,
+)
 from musicbloom.repositories.achievement_progress import AchievementProgressRepository
 from musicbloom.repositories.database_player import DatabasePlayerSessionRepository
 from musicbloom.repositories.decoration_unlock import DecorationUnlockRepository
@@ -23,6 +27,7 @@ from musicbloom.repositories.melody_points_transaction import (
 from musicbloom.repositories.player import PlayerSessionRepository
 from musicbloom.repositories.quest_progress import QuestProgressRepository
 from musicbloom.repositories.reward_claim import RewardClaimRepository
+from musicbloom.repositories.spotify_connection import SpotifyConnectionRepository
 from musicbloom.repositories.track_listening_state import TrackListeningStateRepository
 from musicbloom.repositories.user_progress import UserProgressRepository
 from musicbloom.services.catalog import CatalogService
@@ -30,6 +35,7 @@ from musicbloom.services.garden import GardenService
 from musicbloom.services.player import PlayerService
 from musicbloom.services.progression import ProgressionService
 from musicbloom.services.quest_achievement import QuestAchievementService
+from musicbloom.services.spotify_auth import SpotifyAuthService
 
 
 @lru_cache
@@ -160,4 +166,28 @@ def get_garden_service(
     )
 
 
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def get_spotify_oauth_client() -> SpotifyOAuthClient:
+    """Return the Spotify OAuth HTTP client."""
+    return HttpSpotifyOAuthClient()
+
+
+def get_spotify_auth_service(
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    spotify_client: Annotated[SpotifyOAuthClient, Depends(get_spotify_oauth_client)],
+) -> SpotifyAuthService:
+    """Return Spotify auth service scoped to the demo user."""
+    demo_user = get_demo_user(db)
+    return SpotifyAuthService(
+        settings=settings,
+        user_id=demo_user.id,
+        repository=SpotifyConnectionRepository(db),
+        spotify_client=spotify_client,
+    )
+
+
 GardenServiceDep = Annotated[GardenService, Depends(get_garden_service)]
+SpotifyAuthServiceDep = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]

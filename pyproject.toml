@@ -11,7 +11,9 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "MusicBloom Contributors" }]
 dependencies = [
+    "cryptography>=44.0.0",
     "fastapi>=0.115.0",
+    "httpx>=0.28.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "sqlalchemy>=2.0.36",

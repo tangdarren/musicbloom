@@ -31,6 +31,7 @@ def test_initial_migration_creates_schema(tmp_path: Path) -> None:
     assert "melody_points_transactions" in tables
     assert "decoration_unlocks" in tables
     assert "reward_claims" in tables
+    assert "spotify_connections" in tables
 
     command.downgrade(alembic_cfg, "base")
     inspector = inspect(engine)

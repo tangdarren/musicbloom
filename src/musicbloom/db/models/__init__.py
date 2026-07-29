@@ -9,6 +9,7 @@ from musicbloom.db.models.melody_points_transaction import MelodyPointsTransacti
 from musicbloom.db.models.player_session import PlayerSessionRecord
 from musicbloom.db.models.quest_progress import QuestProgress
 from musicbloom.db.models.reward_claim import RewardClaim
+from musicbloom.db.models.spotify_connection import SpotifyConnectionRecord
 from musicbloom.db.models.track_listening_state import TrackListeningState
 from musicbloom.db.models.user_profile import UserProfile
 from musicbloom.db.models.user_progress import UserProgress
@@ -23,6 +24,7 @@ __all__ = [
     "PlayerSessionRecord",
     "QuestProgress",
     "RewardClaim",
+    "SpotifyConnectionRecord",
     "TrackListeningState",
     "UserProfile",
     "UserProgress",

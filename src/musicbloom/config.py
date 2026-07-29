@@ -7,6 +7,23 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 EnvironmentName = Literal["development", "staging", "production"]
 
+DEFAULT_SPOTIFY_SCOPES: list[str] = [
+    "user-read-email",
+    "user-read-private",
+    "user-read-playback-state",
+    "user-read-currently-playing",
+]
+
+DEFAULT_SPOTIFY_SUCCESS_REDIRECT = "http://localhost:5173/?spotify=connected"
+DEFAULT_SPOTIFY_FAILURE_REDIRECT = "http://localhost:5173/?spotify=error"
+
+SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
+SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_PROFILE_URL = "https://api.spotify.com/v1/me"
+
+OAUTH_STATE_COOKIE = "musicbloom_spotify_oauth_state"
+OAUTH_STATE_MAX_AGE_SECONDS = 600
+
 DEFAULT_CORS_ORIGINS: list[str] = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -41,6 +58,51 @@ class Settings(BaseSettings):
         default_factory=lambda: DEFAULT_CORS_ORIGINS.copy()
     )
     secret_key: SecretStr | None = None
+    token_encryption_key: SecretStr | None = None
+    spotify_client_id: str | None = None
+    spotify_client_secret: SecretStr | None = None
+    spotify_redirect_uri: str | None = None
+    spotify_scopes: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: DEFAULT_SPOTIFY_SCOPES.copy(),
+    )
+    spotify_frontend_success_redirect: str = DEFAULT_SPOTIFY_SUCCESS_REDIRECT
+    spotify_frontend_failure_redirect: str = DEFAULT_SPOTIFY_FAILURE_REDIRECT
+
+    @property
+    def spotify_configured(self) -> bool:
+        """Return True when Spotify OAuth credentials are fully configured."""
+        return (
+            self.spotify_client_id is not None
+            and self.spotify_client_id.strip() != ""
+            and self.spotify_client_secret is not None
+            and self.spotify_client_secret.get_secret_value().strip() != ""
+            and self.spotify_redirect_uri is not None
+            and self.spotify_redirect_uri.strip() != ""
+        )
+
+    @property
+    def resolved_token_encryption_key(self) -> SecretStr | None:
+        """Return the configured token encryption key or fall back to secret_key."""
+        if self.token_encryption_key is not None:
+            return self.token_encryption_key
+        return self.secret_key
+
+    @property
+    def resolved_oauth_state_secret(self) -> SecretStr | None:
+        """Return the secret used to sign OAuth state cookies."""
+        return self.secret_key or self.token_encryption_key
+
+    @field_validator("spotify_scopes", mode="before")
+    @classmethod
+    def parse_spotify_scopes(cls, value: object) -> list[str]:
+        if value is None:
+            return DEFAULT_SPOTIFY_SCOPES.copy()
+        if isinstance(value, str):
+            return [scope.strip() for scope in value.split(",") if scope.strip()]
+        if isinstance(value, list):
+            return [str(scope) for scope in value]
+        msg = "spotify_scopes must be a comma-separated string or list"
+        raise TypeError(msg)
 
     @property
     def resolved_database_url(self) -> str:
@@ -93,8 +155,15 @@ class Settings(BaseSettings):
             f"api_host={self.api_host!r}, api_port={self.api_port!r}, "
             f"database_url={'set' if self.database_url else 'unset'}, "
             f"demo_mode={self.demo_mode!r}, cors_origins={self.cors_origins!r}, "
-            f"secret_key={'**********' if self.secret_key else 'unset'})"
+            f"secret_key={'**********' if self.secret_key else 'unset'}, "
+            f"spotify_client_id={'set' if self.spotify_client_id else 'unset'}, "
+            f"spotify_client_secret={self._repr_spotify_client_secret()})"
         )
+
+    def _repr_spotify_client_secret(self) -> str:
+        if self.spotify_client_secret:
+            return "**********"
+        return "unset"
 
     def __str__(self) -> str:
         return self.__repr__()

@@ -203,3 +203,68 @@ def test_get_settings_is_cached() -> None:
 def test_secret_key_unset_in_repr() -> None:
     settings = Settings()
     assert "secret_key=unset" in repr(settings)
+
+
+def test_spotify_configured_when_credentials_present() -> None:
+    settings = Settings(
+        secret_key=SecretStr("development-secret-key-for-tests!!"),
+        spotify_client_id="client-id",
+        spotify_client_secret=SecretStr("client-secret"),
+        spotify_redirect_uri="http://127.0.0.1:8000/callback",
+    )
+
+    assert settings.spotify_configured is True
+
+
+def test_spotify_not_configured_by_default() -> None:
+    settings = Settings()
+    assert settings.spotify_configured is False
+
+
+def test_spotify_scopes_parse_from_comma_separated_string(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "MUSICBLOOM_SPOTIFY_SCOPES",
+        "user-read-email,user-read-private",
+    )
+    settings = Settings()
+
+    assert settings.spotify_scopes == ["user-read-email", "user-read-private"]
+
+
+def test_spotify_scopes_default_when_unset() -> None:
+    from musicbloom.config import DEFAULT_SPOTIFY_SCOPES
+
+    settings = Settings()
+    assert settings.spotify_scopes == DEFAULT_SPOTIFY_SCOPES
+
+
+def test_spotify_scopes_validator_accepts_none() -> None:
+    from musicbloom.config import DEFAULT_SPOTIFY_SCOPES
+
+    settings = Settings(spotify_scopes=None)  # type: ignore[arg-type]
+    assert settings.spotify_scopes == DEFAULT_SPOTIFY_SCOPES
+
+
+def test_spotify_scopes_reject_invalid_type() -> None:
+    with pytest.raises(TypeError, match="spotify_scopes"):
+        Settings(spotify_scopes=123)  # type: ignore[arg-type]
+
+
+def test_spotify_client_secret_unset_in_repr() -> None:
+    settings = Settings()
+    assert "spotify_client_secret=unset" in repr(settings)
+
+
+def test_spotify_client_secret_masked_in_repr() -> None:
+    settings = Settings(spotify_client_secret=SecretStr("client-secret"))
+    assert "spotify_client_secret=**********" in repr(settings)
+
+
+def test_resolved_oauth_state_secret_prefers_secret_key() -> None:
+    settings = Settings(
+        secret_key=SecretStr("oauth-secret"),
+        token_encryption_key=SecretStr("token-secret"),
+    )
+    assert settings.resolved_oauth_state_secret == settings.secret_key
