@@ -14,11 +14,13 @@ dependencies = [
     "fastapi>=0.115.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
+    "sqlalchemy>=2.0.36",
     "uvicorn[standard]>=0.34.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "alembic>=1.14.0",
     "httpx>=0.28.0",
     "mypy>=1.14.0",
     "pytest>=8.3.0",
@@ -69,6 +71,9 @@ select = [
     "RUF",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
@@ -86,4 +91,4 @@ no_implicit_reexport = true
 strict_equality = true
 extra_checks = true
 mypy_path = "src"
-packages = ["musicbloom"]
+packages = ["musicbloom", "alembic"]

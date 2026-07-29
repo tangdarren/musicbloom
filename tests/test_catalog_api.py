@@ -2,13 +2,10 @@
 
 from fastapi.testclient import TestClient
 
-from musicbloom.api.app import app
 from musicbloom.repositories.demo_data import DEMO_TRACKS
 
-client = TestClient(app)
 
-
-def test_list_tracks_returns_paginated_catalog() -> None:
+def test_list_tracks_returns_paginated_catalog(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?page=1&page_size=3")
 
     assert response.status_code == 200
@@ -20,7 +17,7 @@ def test_list_tracks_returns_paginated_catalog() -> None:
     assert data["items"][0]["id"] == "demo-track-001"
 
 
-def test_list_tracks_includes_required_track_fields() -> None:
+def test_list_tracks_includes_required_track_fields(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?page=1&page_size=1")
     track = response.json()["items"][0]
 
@@ -37,7 +34,7 @@ def test_list_tracks_includes_required_track_fields() -> None:
     assert track["playable_in_demo_mode"] is True
 
 
-def test_list_tracks_filter_by_artist() -> None:
+def test_list_tracks_filter_by_artist(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?artist=Verdant")
 
     assert response.status_code == 200
@@ -46,21 +43,21 @@ def test_list_tracks_filter_by_artist() -> None:
     assert data["items"][0]["title"] == "Fern Fanfare"
 
 
-def test_list_tracks_filter_by_album() -> None:
+def test_list_tracks_filter_by_album(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?album=April")
 
     assert response.status_code == 200
     assert response.json()["total"] == 1
 
 
-def test_list_tracks_filter_by_genre() -> None:
+def test_list_tracks_filter_by_genre(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?genre=chiptune")
 
     assert response.status_code == 200
     assert response.json()["total"] == 1
 
 
-def test_list_tracks_filter_by_mood() -> None:
+def test_list_tracks_filter_by_mood(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?mood=dreamy")
 
     assert response.status_code == 200
@@ -69,25 +66,25 @@ def test_list_tracks_filter_by_mood() -> None:
     assert data["items"][0]["title"] == "Starlit Sprinkler"
 
 
-def test_list_tracks_rejects_invalid_page() -> None:
+def test_list_tracks_rejects_invalid_page(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?page=0")
 
     assert response.status_code == 422
 
 
-def test_list_tracks_rejects_invalid_page_size() -> None:
+def test_list_tracks_rejects_invalid_page_size(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?page_size=0")
 
     assert response.status_code == 422
 
 
-def test_list_tracks_rejects_page_size_above_limit() -> None:
+def test_list_tracks_rejects_page_size_above_limit(client: TestClient) -> None:
     response = client.get("/api/v1/tracks?page_size=101")
 
     assert response.status_code == 422
 
 
-def test_get_track_returns_track() -> None:
+def test_get_track_returns_track(client: TestClient) -> None:
     response = client.get("/api/v1/tracks/demo-track-002")
 
     assert response.status_code == 200
@@ -96,14 +93,14 @@ def test_get_track_returns_track() -> None:
     assert data["audio"]["url"] == "https://demo.musicbloom.local/audio/sunbeam-carousel.ogg"
 
 
-def test_get_track_returns_404_for_unknown_track() -> None:
+def test_get_track_returns_404_for_unknown_track(client: TestClient) -> None:
     response = client.get("/api/v1/tracks/not-a-real-track")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Track 'not-a-real-track' was not found"
 
 
-def test_get_non_playable_demo_track() -> None:
+def test_get_non_playable_demo_track(client: TestClient) -> None:
     response = client.get("/api/v1/tracks/demo-track-008")
 
     assert response.status_code == 200
@@ -111,7 +108,7 @@ def test_get_non_playable_demo_track() -> None:
     assert response.json()["mood"] == "mysterious"
 
 
-def test_list_artists_returns_catalog() -> None:
+def test_list_artists_returns_catalog(client: TestClient) -> None:
     response = client.get("/api/v1/artists")
 
     assert response.status_code == 200
@@ -122,7 +119,7 @@ def test_list_artists_returns_catalog() -> None:
     assert artists[0]["genre"] == "acoustic garden"
 
 
-def test_list_albums_returns_catalog() -> None:
+def test_list_albums_returns_catalog(client: TestClient) -> None:
     response = client.get("/api/v1/albums")
 
     assert response.status_code == 200
@@ -133,8 +130,8 @@ def test_list_albums_returns_catalog() -> None:
     assert artwork_path == "/static/demo/artwork/greenhouse-echoes.png"
 
 
-def test_catalog_endpoints_have_openapi_metadata() -> None:
-    schema = app.openapi()
+def test_catalog_endpoints_have_openapi_metadata(test_app) -> None:
+    schema = test_app.openapi()
     paths = schema["paths"]
 
     assert "/api/v1/tracks" in paths

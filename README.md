@@ -51,6 +51,8 @@ This repository contains the **initial Python backend foundation only**.
 - `GET /api/v1/health` — versioned health check
 - Demo music catalog API with fictional tracks, artists, and albums
 - Player session API for demo playback control (metadata only; client-side audio)
+- SQLAlchemy 2 persistence with Alembic migrations (SQLite default, PostgreSQL compatible)
+- Database-backed player session storage with demo user seeding
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
 - Test suite for endpoints, configuration, and application metadata
@@ -58,9 +60,8 @@ This repository contains the **initial Python backend foundation only**.
 **Not yet implemented:**
 
 - Frontend / visual player
-- Database and persistence
 - Spotify integration
-- Garden, gamification, quests, Melody Points, BloomBud
+- Full gamification API endpoints (progress entities are persisted, APIs planned)
 - Azure DevOps CI/CD pipelines
 
 ## Local Setup
@@ -119,17 +120,53 @@ cp .env.example .env
 | `MUSICBLOOM_API_PORT` | `8000` | Port for the API server |
 | `MUSICBLOOM_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated allowed CORS origins |
 | `MUSICBLOOM_SECRET_KEY` | *(unset)* | Application secret; **required in production** (minimum 32 characters) |
-| `MUSICBLOOM_DATABASE_URL` | *(unset)* | Database connection URL; **required in production** (not yet used) |
+| `MUSICBLOOM_DATABASE_URL` | `sqlite:///./musicbloom.db` | SQLAlchemy database URL (SQLite or PostgreSQL) |
 
 **Production validation:** when `MUSICBLOOM_ENVIRONMENT=production`, the application
 requires a strong `MUSICBLOOM_SECRET_KEY`, a `MUSICBLOOM_DATABASE_URL`, and enforces
 `MUSICBLOOM_DEMO_MODE=false` and `MUSICBLOOM_DEBUG=false`.
 
 Secrets are stored as `SecretStr` values and are masked in settings representations
-to avoid accidental exposure in logs.
+to avoid accidental exposure in logs. Application secrets are never persisted in
+the database.
 
 Settings are cached through `musicbloom.dependencies.get_settings()` and injected
 where needed by the application factory.
+
+### Database
+
+MusicBloom uses **SQLAlchemy 2** with **Alembic** migrations. The default development
+database is local SQLite (`sqlite:///./musicbloom.db`). PostgreSQL is supported by
+setting a PostgreSQL-compatible SQLAlchemy URL.
+
+**Initialize and migrate locally:**
+
+```bash
+# Apply migrations
+alembic upgrade head
+
+# Create a new migration after model changes
+alembic revision --autogenerate -m "describe change"
+```
+
+On application startup, the API initializes the configured database and, when
+`MUSICBLOOM_DEMO_MODE=true`, seeds a default demo user with an empty player session,
+starter garden profile, and initial progress records.
+
+**Persisted entities:**
+
+| Entity | Purpose |
+|--------|---------|
+| User profile | Local/demo user identity |
+| Player session | Playback state, queue, and active track metadata |
+| Listening event | Historical listening activity |
+| Garden profile | Garden name, theme, and layout data |
+| User progress | Melody Points, level, and listening totals |
+| Equipped decoration | Decoration slotted in the garden |
+| Achievement progress | Achievement completion state |
+| Quest progress | Quest status and progress |
+
+Tests use an isolated shared in-memory SQLite database.
 
 ### Demo Catalog API
 

@@ -3,18 +3,17 @@
 from fastapi.testclient import TestClient
 
 from musicbloom import __version__
-from musicbloom.api.app import app, create_app
+from musicbloom.api.app import create_app
+from musicbloom.config import Settings
 from musicbloom.constants import API_TITLE, SERVICE_NAME
 
-client = TestClient(app)
 
-
-def test_root_endpoint_status_code() -> None:
+def test_root_endpoint_status_code(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
 
 
-def test_root_endpoint_response_structure() -> None:
+def test_root_endpoint_response_structure(client: TestClient) -> None:
     response = client.get("/")
     data = response.json()
 
@@ -25,12 +24,12 @@ def test_root_endpoint_response_structure() -> None:
     }
 
 
-def test_health_endpoint_status_code() -> None:
+def test_health_endpoint_status_code(client: TestClient) -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
 
 
-def test_health_endpoint_response_structure() -> None:
+def test_health_endpoint_response_structure(client: TestClient) -> None:
     response = client.get("/api/health")
     data = response.json()
 
@@ -40,7 +39,7 @@ def test_health_endpoint_response_structure() -> None:
     }
 
 
-def test_v1_health_endpoint() -> None:
+def test_v1_health_endpoint(client: TestClient) -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json() == {
@@ -49,15 +48,15 @@ def test_v1_health_endpoint() -> None:
     }
 
 
-def test_fastapi_metadata() -> None:
-    assert app.title == API_TITLE
-    assert app.version == __version__
+def test_fastapi_metadata(test_app) -> None:
+    assert test_app.title == API_TITLE
+    assert test_app.version == __version__
 
 
-def test_create_app_uses_provided_settings() -> None:
-    from musicbloom.config import Settings
-
-    settings = Settings(debug=False, cors_origins=["https://example.com"])
-    test_app = create_app(settings=settings)
-
-    assert test_app.debug is False
+def test_create_app_runs_database_initialization(test_engine) -> None:
+    application = create_app(
+        settings=Settings(demo_mode=True),
+        engine=test_engine,
+    )
+    with TestClient(application):
+        assert application.title == API_TITLE

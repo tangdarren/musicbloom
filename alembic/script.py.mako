@@ -1,0 +1,1 @@
+"""Generic Alembic revision template."""

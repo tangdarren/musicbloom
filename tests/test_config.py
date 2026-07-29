@@ -141,6 +141,22 @@ def test_invalid_production_configuration(
     assert expected_message in str(exc_info.value)
 
 
+def test_resolved_database_url_defaults_to_sqlite() -> None:
+    settings = Settings()
+    assert settings.resolved_database_url == "sqlite:///./musicbloom.db"
+
+
+def test_resolved_database_url_uses_explicit_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "MUSICBLOOM_DATABASE_URL",
+        "postgresql+psycopg://localhost/musicbloom",
+    )
+    settings = Settings()
+    assert settings.resolved_database_url == "postgresql+psycopg://localhost/musicbloom"
+
+
 def test_valid_production_configuration() -> None:
     settings = Settings(
         environment="production",

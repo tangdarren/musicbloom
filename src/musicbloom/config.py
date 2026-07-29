@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     )
     secret_key: SecretStr | None = None
 
+    @property
+    def resolved_database_url(self) -> str:
+        """Return the configured database URL or the local SQLite default."""
+        if self.database_url and self.database_url.strip():
+            return self.database_url.strip()
+        return "sqlite:///./musicbloom.db"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> list[str]:

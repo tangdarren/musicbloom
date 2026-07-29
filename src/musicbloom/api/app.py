@@ -1,7 +1,11 @@
 """FastAPI application factory and route definitions."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.engine import Engine
 
 from musicbloom.api.schemas import (
     HealthResponse,
@@ -13,18 +17,30 @@ from musicbloom.api.v1.player_handlers import register_player_exception_handlers
 from musicbloom.api.v1.router import router as v1_router
 from musicbloom.config import Settings
 from musicbloom.constants import API_DESCRIPTION, API_TITLE, __version__
+from musicbloom.db.init import initialize_database
+from musicbloom.db.session import create_database_engine
 from musicbloom.dependencies import get_settings
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    engine: Engine | None = None,
+) -> FastAPI:
     """Create and configure the FastAPI application."""
     app_settings = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        db_engine = engine or create_database_engine(app_settings.resolved_database_url)
+        initialize_database(db_engine, app_settings)
+        yield
 
     application = FastAPI(
         title=API_TITLE,
         version=__version__,
         description=API_DESCRIPTION,
         debug=app_settings.debug,
+        lifespan=lifespan,
     )
 
     application.add_middleware(

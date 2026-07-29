@@ -4,30 +4,33 @@ from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy.orm import Session
 
 from musicbloom.config import Settings
+from musicbloom.db.session import get_db
+from musicbloom.repositories.database_player import DatabasePlayerSessionRepository
 from musicbloom.repositories.demo_catalog import DemoCatalogRepository
-from musicbloom.repositories.in_memory_player import InMemoryPlayerSessionRepository
+from musicbloom.repositories.player import PlayerSessionRepository
 from musicbloom.services.catalog import CatalogService
 from musicbloom.services.player import PlayerService
 
 
 @lru_cache
 def get_settings() -> Settings:
-    """Return cached application settings."""
+    """Return application settings."""
     return Settings()
 
 
-@lru_cache
 def get_demo_catalog_repository() -> DemoCatalogRepository:
-    """Return cached demo catalog repository."""
+    """Return demo catalog repository."""
     return DemoCatalogRepository()
 
 
-@lru_cache
-def get_player_session_repository() -> InMemoryPlayerSessionRepository:
-    """Return cached in-memory player session repository."""
-    return InMemoryPlayerSessionRepository()
+def get_player_session_repository(
+    db: Annotated[Session, Depends(get_db)],
+) -> PlayerSessionRepository:
+    """Return database-backed player session repository for the demo user."""
+    return DatabasePlayerSessionRepository.for_demo_user(db)
 
 
 def get_catalog_service(
@@ -42,7 +45,7 @@ def get_catalog_service(
 
 def get_player_service(
     player_repository: Annotated[
-        InMemoryPlayerSessionRepository,
+        PlayerSessionRepository,
         Depends(get_player_session_repository),
     ],
     catalog_repository: Annotated[
@@ -50,7 +53,7 @@ def get_player_service(
         Depends(get_demo_catalog_repository),
     ],
 ) -> PlayerService:
-    """Return player service backed by in-memory session storage."""
+    """Return player service backed by database session storage."""
     return PlayerService(player_repository, catalog_repository)
 
 
