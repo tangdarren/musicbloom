@@ -42,7 +42,8 @@ def test_listening_event_repository(db_session: Session) -> None:
     repository.add_event(
         user_id=user.id,
         track_id="demo-track-001",
-        event_type="play",
+        event_type="started",
+        idempotency_key="repo-test-001",
         position_ms=0,
         occurred_at=datetime.now(tz=UTC),
     )

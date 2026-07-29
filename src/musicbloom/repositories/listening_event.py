@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from musicbloom.db.models.listening_event import ListeningEvent
@@ -20,6 +20,7 @@ class ListeningEventRepository:
         user_id: int,
         track_id: str,
         event_type: str,
+        idempotency_key: str,
         position_ms: int = 0,
         occurred_at: datetime | None = None,
     ) -> ListeningEvent:
@@ -28,6 +29,7 @@ class ListeningEventRepository:
             user_id=user_id,
             track_id=track_id,
             event_type=event_type,
+            idempotency_key=idempotency_key,
             position_ms=position_ms,
             occurred_at=occurred_at or datetime.now(tz=UTC),
         )
@@ -35,6 +37,20 @@ class ListeningEventRepository:
         self._db.flush()
         self._db.refresh(event)
         return event
+
+    def get_by_idempotency_key(
+        self,
+        *,
+        user_id: int,
+        idempotency_key: str,
+    ) -> ListeningEvent | None:
+        """Return an event by user and idempotency key."""
+        return self._db.scalar(
+            select(ListeningEvent).where(
+                ListeningEvent.user_id == user_id,
+                ListeningEvent.idempotency_key == idempotency_key,
+            ),
+        )
 
     def list_for_user(self, user_id: int) -> list[ListeningEvent]:
         """Return listening events for a user ordered by occurrence time."""
@@ -44,4 +60,15 @@ class ListeningEventRepository:
                 .where(ListeningEvent.user_id == user_id)
                 .order_by(ListeningEvent.occurred_at.desc()),
             ),
+        )
+
+    def count_for_user(self, user_id: int) -> int:
+        """Return the number of listening events for a user."""
+        return int(
+            self._db.scalar(
+                select(func.count())
+                .select_from(ListeningEvent)
+                .where(ListeningEvent.user_id == user_id),
+            )
+            or 0,
         )

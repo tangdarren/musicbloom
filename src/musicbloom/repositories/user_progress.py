@@ -24,3 +24,11 @@ class UserProgressRepository:
         self._db.flush()
         self._db.refresh(progress)
         return progress
+
+    def require_for_user(self, user_id: int) -> UserProgress:
+        """Return progress for a user, raising if missing."""
+        progress = self.get_for_user(user_id)
+        if progress is None:
+            msg = "User progress has not been initialized"
+            raise RuntimeError(msg)
+        return progress

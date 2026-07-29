@@ -15,7 +15,11 @@ from musicbloom.db.mappers.player_session import (
     apply_player_session_to_record,
     create_default_player_session_record,
 )
+from musicbloom.db.models.listening_event import ListeningEvent
+from musicbloom.db.models.melody_points_transaction import MelodyPointsTransaction
 from musicbloom.db.models.player_session import PlayerSessionRecord
+from musicbloom.db.models.track_listening_state import TrackListeningState
+from musicbloom.db.models.user_progress import UserProgress
 from musicbloom.db.session import create_test_database_engine, get_db
 from musicbloom.dependencies import get_settings
 from musicbloom.models.player import create_initial_player_session
@@ -89,6 +93,7 @@ def configure_test_dependencies(
 
     test_app.dependency_overrides[get_db] = override_get_db
     _reset_demo_player_session(factory)
+    _reset_demo_progression_state(factory)
     yield
     test_app.dependency_overrides.clear()
     get_settings.cache_clear()
@@ -108,4 +113,33 @@ def _reset_demo_player_session(factory: sessionmaker[Session]) -> None:
             session.add(create_default_player_session_record(user.id))
         else:
             apply_player_session_to_record(record, initial)
+        session.commit()
+
+
+def _reset_demo_progression_state(factory: sessionmaker[Session]) -> None:
+    """Restore the demo user's progression records to their initial state."""
+    with factory() as session:
+        user = get_demo_user(session)
+        progress = session.scalar(
+            select(UserProgress).where(UserProgress.user_id == user.id),
+        )
+        if progress is not None:
+            progress.melody_points = 0
+            progress.level = 1
+            progress.total_listening_ms = 0
+            progress.experience_points = 0
+            progress.streak_current_days = 0
+            progress.streak_last_utc_date = None
+            progress.streak_bonus_points_today = 0
+            progress.streak_bonus_utc_date = None
+
+        for model in (
+            MelodyPointsTransaction,
+            ListeningEvent,
+            TrackListeningState,
+        ):
+            for record in session.scalars(
+                select(model).where(model.user_id == user.id),
+            ):
+                session.delete(record)
         session.commit()

@@ -27,6 +27,8 @@ def test_initial_migration_creates_schema(tmp_path: Path) -> None:
     assert "equipped_decorations" in tables
     assert "achievement_progress" in tables
     assert "quest_progress" in tables
+    assert "track_listening_states" in tables
+    assert "melody_points_transactions" in tables
 
     command.downgrade(alembic_cfg, "base")
     inspector = inspect(engine)

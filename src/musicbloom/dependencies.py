@@ -7,12 +7,20 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from musicbloom.config import Settings
+from musicbloom.db.init import get_demo_user
 from musicbloom.db.session import get_db
 from musicbloom.repositories.database_player import DatabasePlayerSessionRepository
 from musicbloom.repositories.demo_catalog import DemoCatalogRepository
+from musicbloom.repositories.listening_event import ListeningEventRepository
+from musicbloom.repositories.melody_points_transaction import (
+    MelodyPointsTransactionRepository,
+)
 from musicbloom.repositories.player import PlayerSessionRepository
+from musicbloom.repositories.track_listening_state import TrackListeningStateRepository
+from musicbloom.repositories.user_progress import UserProgressRepository
 from musicbloom.services.catalog import CatalogService
 from musicbloom.services.player import PlayerService
+from musicbloom.services.progression import ProgressionService
 
 
 @lru_cache
@@ -59,3 +67,22 @@ def get_player_service(
 
 CatalogServiceDep = Annotated[CatalogService, Depends(get_catalog_service)]
 PlayerServiceDep = Annotated[PlayerService, Depends(get_player_service)]
+
+
+def get_progression_service(
+    db: Annotated[Session, Depends(get_db)],
+    catalog_service: Annotated[CatalogService, Depends(get_catalog_service)],
+) -> ProgressionService:
+    """Return progression service scoped to the demo user."""
+    demo_user = get_demo_user(db)
+    return ProgressionService(
+        user_id=demo_user.id,
+        catalog_service=catalog_service,
+        listening_event_repository=ListeningEventRepository(db),
+        track_state_repository=TrackListeningStateRepository(db),
+        transaction_repository=MelodyPointsTransactionRepository(db),
+        progress_repository=UserProgressRepository(db),
+    )
+
+
+ProgressionServiceDep = Annotated[ProgressionService, Depends(get_progression_service)]

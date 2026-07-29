@@ -53,6 +53,7 @@ This repository contains the **initial Python backend foundation only**.
 - Player session API for demo playback control (metadata only; client-side audio)
 - SQLAlchemy 2 persistence with Alembic migrations (SQLite default, PostgreSQL compatible)
 - Database-backed player session storage with demo user seeding
+- Listening progression system with Melody Points, experience, levels, and streaks
 - Basic CORS middleware driven by configuration
 - Development tooling configuration (pytest, Ruff, mypy)
 - Test suite for endpoints, configuration, and application metadata
@@ -61,7 +62,7 @@ This repository contains the **initial Python backend foundation only**.
 
 - Frontend / visual player
 - Spotify integration
-- Full gamification API endpoints (progress entities are persisted, APIs planned)
+- Quest and achievement API endpoints (entities are persisted, APIs planned)
 - Azure DevOps CI/CD pipelines
 
 ## Local Setup
@@ -159,14 +160,68 @@ starter garden profile, and initial progress records.
 |--------|---------|
 | User profile | Local/demo user identity |
 | Player session | Playback state, queue, and active track metadata |
-| Listening event | Historical listening activity |
+| Listening event | Historical listening activity with idempotency keys |
 | Garden profile | Garden name, theme, and layout data |
-| User progress | Melody Points, level, and listening totals |
+| User progress | Melody Points, experience, level, streaks, and listening totals |
+| Track listening state | Per-track anti-exploit progress and completion tracking |
+| Melody points transaction | Audited point awards with reasons and explanations |
 | Equipped decoration | Decoration slotted in the garden |
 | Achievement progress | Achievement completion state |
 | Quest progress | Quest status and progress |
 
 Tests use an isolated shared in-memory SQLite database.
+
+Apply migrations after pulling progression changes:
+
+```bash
+alembic upgrade head
+```
+
+### Listening Progression API
+
+The progression API validates listening events server-side and calculates all
+Melody Points and experience awards using deterministic rules in
+`musicbloom.progression.policy`. Client-supplied point totals are ignored.
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/listening/events` | Submit a listening event (idempotent) |
+| `GET /api/v1/progress` | Combined progression summary |
+| `GET /api/v1/stats` | Aggregate listening statistics |
+| `GET /api/v1/streak` | UTC-based daily listening streak |
+
+**Listening event types:**
+
+| Type | Behavior |
+|------|----------|
+| `started` | Records playback start; awards no points |
+| `progress` | Awards points for validated listening intervals |
+| `completed` | Awards a one-time completion bonus when threshold is met |
+| `skipped` | Marks the track skipped; no completion credit |
+
+**Scoring highlights:**
+
+- Progress awards require validated position advances within track duration
+- Each track has capped progress rewards to prevent unlimited farming
+- Completion bonuses are granted once per track per user
+- Daily streak bonuses use UTC calendar dates and are capped per day
+- Responses include transparent `awards` explanations for every grant
+
+Example requests:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/listening/events" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "track_id": "demo-track-001",
+    "event_type": "progress",
+    "position_ms": 60000,
+    "idempotency_key": "progress-001"
+  }'
+curl "http://127.0.0.1:8000/api/v1/progress"
+curl "http://127.0.0.1:8000/api/v1/stats"
+curl "http://127.0.0.1:8000/api/v1/streak"
+```
 
 ### Demo Catalog API
 
