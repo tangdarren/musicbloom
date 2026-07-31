@@ -211,12 +211,131 @@
 }
 
 .queue-panel,
-.track-browser {
+.track-browser,
+.bloom-mix-panel {
   padding: 1rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-soft);
+}
+
+.bloom-mix__moods {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.bloom-mix__mood {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-accent);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.bloom-mix__mood:hover,
+.bloom-mix__mood:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.bloom-mix__mood.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  background: #e7f6eb;
+}
+
+.bloom-mix__mood-name {
+  font-weight: 700;
+}
+
+.bloom-mix__mood-description {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.bloom-mix__result {
+  margin-top: 1rem;
+}
+
+.bloom-mix__preview {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.bloom-mix__preview h4 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.bloom-mix__preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.bloom-mix__preview-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-accent);
+}
+
+.bloom-mix__artwork {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.bloom-mix__artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bloom-mix__preview-meta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.bloom-mix__preview-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bloom-mix__refresh {
+  justify-self: start;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  cursor: pointer;
+}
+
+.bloom-mix__refresh:hover,
+.bloom-mix__refresh:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
 }
 
 .queue-list,

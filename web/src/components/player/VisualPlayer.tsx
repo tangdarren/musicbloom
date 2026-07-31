@@ -1,5 +1,6 @@
 import { LoadingState } from "../LoadingState";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { BloomMixPanel } from "./BloomMixPanel";
 import { DemoModeBanner } from "./DemoModeBanner";
 import { NowPlaying } from "./NowPlaying";
 import { PlayerControls } from "./PlayerControls";
@@ -116,6 +117,7 @@ export function VisualPlayer() {
         </div>
 
         <div className="visual-player__side">
+          <BloomMixPanel />
           <QueuePanel
             queue={session.queue}
             activeTrackId={activeTrack?.track_id ?? null}
