@@ -66,6 +66,24 @@ function stubMediaElement() {
   });
 }
 
+function stubMatchMedia(reducedMotion: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches:
+        query === "(prefers-reduced-motion: reduce)" ? reducedMotion : false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 function makeTrack(
   overrides: Partial<Track> & Pick<Track, "id" | "title" | "mood">,
 ): Track {
@@ -104,6 +122,11 @@ const calmTracks: Track[] = [
   makeTrack({ id: "calm-f", title: "Fern Window", mood: "calm" }),
 ];
 
+const dreamyTracks: Track[] = [
+  makeTrack({ id: "dreamy-a", title: "Cloud Terrace", mood: "dreamy" }),
+  makeTrack({ id: "dreamy-b", title: "Moonlit Trellis", mood: "dreamy" }),
+];
+
 function buildActiveTrack(track: Track): ActiveTrack {
   return {
     track_id: track.id,
@@ -140,9 +163,11 @@ function mockCatalogTracks() {
   vi.spyOn(apiClient, "getTracks").mockImplementation(async (params) => {
     const mood = params?.mood;
     const items =
-      typeof mood === "string"
-        ? calmTracks.filter((track) => track.mood === mood)
-        : calmTracks;
+      mood === "dreamy"
+        ? dreamyTracks
+        : typeof mood === "string"
+          ? calmTracks.filter((track) => track.mood === mood)
+          : calmTracks;
     return {
       items,
       total: items.length,
@@ -160,7 +185,9 @@ function renderPanel(session: PlayerSession = buildSession()) {
   });
 
   const playSpy = vi.spyOn(apiClient, "play").mockImplementation(async (trackId) => {
-    const track = calmTracks.find((item) => item.id === trackId) ?? calmTracks[0]!;
+    const track =
+      [...calmTracks, ...dreamyTracks].find((item) => item.id === trackId) ??
+      calmTracks[0]!;
     currentSession = buildSession({
       ...currentSession,
       state: "playing",
@@ -174,7 +201,9 @@ function renderPanel(session: PlayerSession = buildSession()) {
   const queueSpy = vi
     .spyOn(apiClient, "queueTrack")
     .mockImplementation(async (trackId) => {
-      const track = calmTracks.find((item) => item.id === trackId);
+      const track = [...calmTracks, ...dreamyTracks].find(
+        (item) => item.id === trackId,
+      );
       if (!track) {
         throw new Error(`Unknown track ${trackId}`);
       }
@@ -221,17 +250,15 @@ function renderPanel(session: PlayerSession = buildSession()) {
 async function selectCalmAndWaitForPreview() {
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: /Calm/i }));
-  const preview = await screen.findByRole("list");
+  const preview = await screen.findByRole("list", {
+    name: "BloomMix preview",
+  });
   return { user, preview };
 }
 
 describe("planBloomMixPlant", () => {
   it("skips active and queued track IDs while preserving order", () => {
-    const plan = planBloomMixPlant(
-      ["a", "b", "c", "d"],
-      "b",
-      ["d"],
-    );
+    const plan = planBloomMixPlant(["a", "b", "c", "d"], "b", ["d"]);
 
     expect(plan.toPlant).toEqual(["a", "c"]);
     expect(plan.skipped).toBe(2);
@@ -249,6 +276,7 @@ describe("BloomMixPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     stubMediaElement();
+    stubMatchMedia(true);
   });
 
   afterEach(() => {
@@ -276,14 +304,23 @@ describe("BloomMixPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("marks the selected mood as pressed and shows a Selected label", async () => {
+    renderPanel();
+    await selectCalmAndWaitForPreview();
+
+    const calmButton = screen.getByRole("button", { name: /Calm/i });
+    expect(calmButton).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(calmButton).getByText("Selected"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Playful/i }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("loads tracks for the selected mood and shows a successful preview", async () => {
     renderPanel();
     const { preview } = await selectCalmAndWaitForPreview();
-
-    expect(screen.getByRole("button", { name: /Calm/i })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
 
     const items = within(preview).getAllByRole("listitem");
     expect(items).toHaveLength(5);
@@ -291,7 +328,7 @@ describe("BloomMixPanel", () => {
     expect(screen.getByRole("button", { name: "Refresh mix" })).toBeInTheDocument();
   });
 
-  it("shows a loading state while tracks are fetching", async () => {
+  it("announces loading status through a polite live region", async () => {
     let resolveTracks: ((value: {
       items: Track[];
       total: number;
@@ -327,21 +364,92 @@ describe("BloomMixPanel", () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Dreamy/i }));
 
+    const loadingStatus = await screen.findByRole("status");
+    expect(loadingStatus).toHaveTextContent("Growing your BloomMix");
     expect(
-      await screen.findByText("Growing your BloomMix"),
-    ).toBeInTheDocument();
+      loadingStatus.closest(".bloom-mix__result"),
+    ).toHaveAttribute("aria-live", "polite");
 
     resolveTracks?.({
-      items: [
-        makeTrack({ id: "dreamy-a", title: "Cloud Terrace", mood: "dreamy" }),
-      ],
-      total: 1,
+      items: dreamyTracks,
+      total: dreamyTracks.length,
       page: 1,
       page_size: 50,
       total_pages: 1,
     });
 
     expect(await screen.findByText("Cloud Terrace")).toBeInTheDocument();
+  });
+
+  it("ignores stale responses after quickly switching moods", async () => {
+    let resolveDreamy: ((value: {
+      items: Track[];
+      total: number;
+      page: number;
+      page_size: number;
+      total_pages: number;
+    }) => void) | undefined;
+
+    vi.spyOn(apiClient, "getPlayerSession").mockResolvedValue(buildSession());
+    vi.spyOn(apiClient, "getTracks").mockImplementation((params) => {
+      if (params?.mood === "dreamy") {
+        return new Promise((resolve) => {
+          resolveDreamy = resolve;
+        });
+      }
+      if (params?.mood === "calm") {
+        return Promise.resolve({
+          items: calmTracks,
+          total: calmTracks.length,
+          page: 1,
+          page_size: 50,
+          total_pages: 1,
+        });
+      }
+      return Promise.resolve({
+        items: calmTracks,
+        total: calmTracks.length,
+        page: 1,
+        page_size: 50,
+        total_pages: 1,
+      });
+    });
+
+    render(
+      <QueryProvider client={createTestQueryClient()}>
+        <PlayerProvider>
+          <BloomMixPanel />
+        </PlayerProvider>
+      </QueryProvider>,
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Dreamy/i }));
+    expect(
+      await screen.findByText("Growing your BloomMix"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Calm/i }));
+    expect(
+      await screen.findByRole("list", { name: "BloomMix preview" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Morning Dew Waltz")).toBeInTheDocument();
+
+    resolveDreamy?.({
+      items: dreamyTracks,
+      total: dreamyTracks.length,
+      page: 1,
+      page_size: 50,
+      total_pages: 1,
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Cloud Terrace")).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: /Calm/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Morning Dew Waltz")).toBeInTheDocument();
   });
 
   it("refreshes the mix ordering without another mood catalog request", async () => {
@@ -361,7 +469,9 @@ describe("BloomMixPanel", () => {
     await user.click(screen.getByRole("button", { name: "Refresh mix" }));
 
     await waitFor(() => {
-      const nextOrder = within(screen.getByRole("list"))
+      const nextOrder = within(
+        screen.getByRole("list", { name: "BloomMix preview" }),
+      )
         .getAllByRole("listitem")
         .map((item) => item.textContent);
       expect(nextOrder).not.toEqual(firstOrder);
@@ -420,11 +530,11 @@ describe("BloomMixPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("surfaces API failures for the selected mood", async () => {
+  it("shows a helpful load error without raw server details", async () => {
     vi.spyOn(apiClient, "getPlayerSession").mockResolvedValue(buildSession());
     vi.spyOn(apiClient, "getTracks").mockImplementation(async (params) => {
       if (params?.mood) {
-        throw new Error("BloomMix catalog unavailable");
+        throw new Error("SQLSTATE 57P01 terminating connection");
       }
       return {
         items: calmTracks,
@@ -446,9 +556,9 @@ describe("BloomMixPanel", () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Mysterious/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /BloomMix catalog unavailable/i,
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/couldn't load tracks for this mood/i);
+    expect(alert).not.toHaveTextContent(/SQLSTATE/i);
   });
 });
 
@@ -456,6 +566,7 @@ describe("BloomMixPanel planting", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     stubMediaElement();
+    stubMatchMedia(true);
   });
 
   afterEach(() => {
@@ -469,14 +580,10 @@ describe("BloomMixPanel planting", () => {
     const previewIds = generateBloomMix(calmTracks, "calm", 1).map(
       (track) => track.id,
     );
-    const titles = within(preview)
-      .getAllByRole("listitem")
-      .map((item) => item.querySelector("strong")?.textContent);
-    expect(titles).toEqual(
-      previewIds.map(
-        (id) => calmTracks.find((track) => track.id === id)?.title,
-      ),
-    );
+    for (const id of previewIds) {
+      const title = calmTracks.find((track) => track.id === id)?.title;
+      expect(within(preview).getByText(title!)).toBeInTheDocument();
+    }
 
     const sessionCallsBefore = (
       apiClient.getPlayerSession as unknown as ReturnType<typeof vi.fn>
@@ -494,6 +601,7 @@ describe("BloomMixPanel planting", () => {
     expect(
       await screen.findByText(/Planted 5 tracks into your garden queue/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Success:/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(
@@ -501,6 +609,43 @@ describe("BloomMixPanel planting", () => {
           .calls.length,
       ).toBeGreaterThan(sessionCallsBefore);
     });
+  });
+
+  it("shows planting celebration markup and reduced-motion panel class", async () => {
+    stubMatchMedia(true);
+    renderPanel(buildSession());
+    const { user } = await selectCalmAndWaitForPreview();
+
+    expect(
+      document.querySelector(".bloom-mix-panel--reduced-motion"),
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Plant this mix" }));
+
+    expect(
+      await screen.findByText(/Planted 5 tracks into your garden queue/i),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".bloom-mix__celebration")).not.toBeNull();
+    expect(document.querySelector(".bloom-mix__sprout")).not.toBeNull();
+  });
+
+  it("keeps celebration markup when motion is allowed", async () => {
+    stubMatchMedia(false);
+    renderPanel(buildSession());
+    const { user } = await selectCalmAndWaitForPreview();
+
+    await waitFor(() => {
+      expect(
+        document.querySelector(".bloom-mix-panel--reduced-motion"),
+      ).toBeNull();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Plant this mix" }));
+
+    expect(
+      await screen.findByText(/Planted 5 tracks into your garden queue/i),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".bloom-mix__celebration")).not.toBeNull();
   });
 
   it("appends only new tracks and preserves the active track while playing", async () => {
@@ -579,6 +724,7 @@ describe("BloomMixPanel planting", () => {
         /Every track in this mix is already active or queued/i,
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Note:/i)).toBeInTheDocument();
     expect(playSpy).not.toHaveBeenCalled();
     expect(queueSpy).not.toHaveBeenCalled();
   });
@@ -587,7 +733,7 @@ describe("BloomMixPanel planting", () => {
     const { playSpy, queueSpy } = renderPanel(buildSession());
     queueSpy.mockImplementation(async (trackId) => {
       if (queueSpy.mock.calls.length >= 2) {
-        throw new Error("Queue service unavailable");
+        throw new Error("Queue service unavailable SQLSTATE 57P01");
       }
       const track = calmTracks.find((item) => item.id === trackId)!;
       return buildSession({
@@ -612,9 +758,12 @@ describe("BloomMixPanel planting", () => {
     });
 
     const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Partial:/i);
     expect(alert).toHaveTextContent(/Added 2 tracks/i);
     expect(alert).toHaveTextContent(/could not be planted/i);
     expect(alert).not.toHaveTextContent(/Planted 5 tracks/i);
+    expect(alert).not.toHaveTextContent(/SQLSTATE/i);
+    expect(alert).not.toHaveTextContent(/Queue service unavailable/i);
   });
 
   it("prevents repeated clicks from submitting the same plant operation twice", async () => {

@@ -2,14 +2,14 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient, resolveMediaPath } from "../../api/client";
-import type { Track, TrackMood } from "../../api/types";
+import { ApiError, NetworkError, type Track, type TrackMood } from "../../api/types";
+import { useReducedMotion } from "../dev-garden/useReducedMotion";
 import { generateBloomMix } from "../../player/bloomMix";
 import { BLOOM_MIX_MOODS } from "../../player/bloomMixMoods";
 import { formatTime } from "../../player/format";
 import { planBloomMixPlant } from "../../player/plantBloomMix";
 import { PLAYER_SESSION_KEY } from "../../player/PlayerContext";
 import { usePlayer } from "../../player/usePlayer";
-import { LoadingState } from "../LoadingState";
 
 type PlantFeedback =
   | { kind: "success"; message: string }
@@ -17,11 +17,32 @@ type PlantFeedback =
   | { kind: "partial"; message: string }
   | { kind: "error"; message: string };
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
+function getBloomMixErrorMessage(
+  error: unknown,
+  context: "load" | "plant",
+): string {
+  if (error instanceof NetworkError) {
+    return context === "load"
+      ? "We couldn't reach MusicBloom to grow this mix. Check your connection and try again."
+      : "We couldn't reach MusicBloom to plant this mix. Check your connection and try again.";
   }
-  return "Unable to load BloomMix tracks.";
+
+  if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      return "MusicBloom had trouble with that request. Please try again in a moment.";
+    }
+    if (error.status === 409) {
+      return "Some of these tracks are already in your queue.";
+    }
+  }
+
+  return context === "load"
+    ? "We couldn't load tracks for this mood. Please try another mood or try again."
+    : "We couldn't plant the mix into your queue. Please try again.";
+}
+
+function plantedCountLabel(count: number): string {
+  return `${count} track${count === 1 ? "" : "s"}`;
 }
 
 function MixPreviewItem({ track }: { track: Track }) {
@@ -51,22 +72,34 @@ function MixPreviewItem({ track }: { track: Track }) {
         )}
       </div>
       <div className="bloom-mix__preview-meta">
-        <strong>{track.title}</strong>
-        <span className="muted">
-          {track.artist_name}
-          {durationLabel ? ` · ${durationLabel}` : ""}
+        <strong className="bloom-mix__track-title">{track.title}</strong>
+        <span className="bloom-mix__track-subtitle muted">
+          <span className="bloom-mix__track-artist">{track.artist_name}</span>
+          {durationLabel ? (
+            <span className="bloom-mix__track-duration"> · {durationLabel}</span>
+          ) : null}
         </span>
       </div>
     </li>
   );
 }
 
-function plantedCountLabel(count: number): string {
-  return `${count} track${count === 1 ? "" : "s"}`;
+function PlantCelebration() {
+  return (
+    <div className="bloom-mix__celebration" aria-hidden="true">
+      <span className="bloom-mix__sprout" />
+      <span className="bloom-mix__petal bloom-mix__petal--1" />
+      <span className="bloom-mix__petal bloom-mix__petal--2" />
+      <span className="bloom-mix__petal bloom-mix__petal--3" />
+      <span className="bloom-mix__petal bloom-mix__petal--4" />
+      <span className="bloom-mix__petal bloom-mix__petal--5" />
+    </div>
+  );
 }
 
 export function BloomMixPanel() {
   const queryClient = useQueryClient();
+  const reducedMotion = useReducedMotion();
   const { session, playTrack, enqueueTrack } = usePlayer();
   const [selectedMood, setSelectedMood] = useState<TrackMood | null>(null);
   const [seed, setSeed] = useState(1);
@@ -87,12 +120,23 @@ export function BloomMixPanel() {
     enabled: selectedMood !== null,
   });
 
+  const isMoodResultReady =
+    selectedMood !== null &&
+    tracksQuery.isSuccess &&
+    !tracksQuery.isPending &&
+    Boolean(tracksQuery.data);
+
+  const isMoodLoading =
+    selectedMood !== null &&
+    (tracksQuery.isPending ||
+      (tracksQuery.isFetching && !tracksQuery.isSuccess));
+
   const mix = useMemo(() => {
-    if (!selectedMood || !tracksQuery.data) {
+    if (!isMoodResultReady || !selectedMood || !tracksQuery.data) {
       return [];
     }
     return generateBloomMix(tracksQuery.data.items, selectedMood, seed);
-  }, [selectedMood, seed, tracksQuery.data]);
+  }, [isMoodResultReady, selectedMood, seed, tracksQuery.data]);
 
   const selectMood = (mood: TrackMood) => {
     if (isPlanting) {
@@ -129,8 +173,7 @@ export function BloomMixPanel() {
     if (plan.toPlant.length === 0) {
       setPlantFeedback({
         kind: "info",
-        message:
-          "Every track in this mix is already active or queued.",
+        message: "Every track in this mix is already active or queued.",
       });
       setIsPlanting(false);
       plantingLockRef.current = false;
@@ -163,12 +206,12 @@ export function BloomMixPanel() {
       if (planted > 0) {
         setPlantFeedback({
           kind: "partial",
-          message: `Added ${plantedCountLabel(planted)}, but the rest of the mix could not be planted. ${getErrorMessage(error)}`,
+          message: `Added ${plantedCountLabel(planted)}, but the rest of the mix could not be planted. ${getBloomMixErrorMessage(error, "plant")}`,
         });
       } else {
         setPlantFeedback({
           kind: "error",
-          message: getErrorMessage(error),
+          message: getBloomMixErrorMessage(error, "plant"),
         });
       }
     } finally {
@@ -185,12 +228,18 @@ export function BloomMixPanel() {
         Choose a mood to grow a five-song BloomMix preview.
       </p>
     );
-  } else if (tracksQuery.isLoading) {
-    resultContent = <LoadingState label="Growing your BloomMix" />;
+  } else if (isMoodLoading) {
+    resultContent = (
+      <div className="loading-state" role="status">
+        <span className="loading-state__spinner" aria-hidden="true" />
+        <span>Growing your BloomMix</span>
+      </div>
+    );
   } else if (tracksQuery.isError) {
     resultContent = (
       <div className="player-alert" role="alert">
-        {getErrorMessage(tracksQuery.error)}
+        <span className="bloom-mix__feedback-prefix">Unable to load</span>
+        {getBloomMixErrorMessage(tracksQuery.error, "load")}
       </div>
     );
   } else if (mix.length === 0) {
@@ -208,9 +257,9 @@ export function BloomMixPanel() {
             {mix.length} track{mix.length === 1 ? "" : "s"}
           </span>
         </div>
-        <ol className="bloom-mix__preview-list">
+        <ol className="bloom-mix__preview-list" aria-label="BloomMix preview">
           {mix.map((track) => (
-            <MixPreviewItem key={track.id} track={track} />
+            <MixPreviewItem key={`${selectedMood}-${seed}-${track.id}`} track={track} />
           ))}
         </ol>
         <div className="bloom-mix__actions">
@@ -238,7 +287,14 @@ export function BloomMixPanel() {
   }
 
   return (
-    <section className="bloom-mix-panel" aria-label="BloomMix">
+    <section
+      className={
+        reducedMotion
+          ? "bloom-mix-panel bloom-mix-panel--reduced-motion"
+          : "bloom-mix-panel"
+      }
+      aria-label="BloomMix"
+    >
       <div className="panel-heading">
         <h3>BloomMix</h3>
         <span className="muted">Mood playlist preview</span>
@@ -264,7 +320,12 @@ export function BloomMixPanel() {
               disabled={isPlanting}
               onClick={() => selectMood(mood.id)}
             >
-              <span className="bloom-mix__mood-name">{mood.name}</span>
+              <span className="bloom-mix__mood-heading">
+                <span className="bloom-mix__mood-name">{mood.name}</span>
+                {isSelected ? (
+                  <span className="bloom-mix__mood-selected-tag">Selected</span>
+                ) : null}
+              </span>
               <span className="bloom-mix__mood-description">
                 {mood.description}
               </span>
@@ -273,7 +334,11 @@ export function BloomMixPanel() {
         })}
       </div>
 
-      <div className="bloom-mix__result" aria-live="polite">
+      <div
+        className="bloom-mix__result"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {resultContent}
         {plantFeedback ? (
           <div
@@ -281,7 +346,7 @@ export function BloomMixPanel() {
               plantFeedback.kind === "error" || plantFeedback.kind === "partial"
                 ? "player-alert bloom-mix__feedback"
                 : plantFeedback.kind === "success"
-                  ? "award-toast bloom-mix__feedback"
+                  ? "award-toast bloom-mix__feedback bloom-mix__feedback--success"
                   : "bloom-mix__feedback bloom-mix__feedback--info"
             }
             role={
@@ -290,7 +355,19 @@ export function BloomMixPanel() {
                 : "status"
             }
           >
-            <p>{plantFeedback.message}</p>
+            {plantFeedback.kind === "success" ? <PlantCelebration /> : null}
+            <p>
+              <span className="bloom-mix__feedback-prefix">
+                {plantFeedback.kind === "success"
+                  ? "Success: "
+                  : plantFeedback.kind === "info"
+                    ? "Note: "
+                    : plantFeedback.kind === "partial"
+                      ? "Partial: "
+                      : "Error: "}
+              </span>
+              {plantFeedback.message}
+            </p>
           </div>
         ) : null}
       </div>
