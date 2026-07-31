@@ -1,12 +1,21 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient, resolveMediaPath } from "../../api/client";
 import type { Track, TrackMood } from "../../api/types";
 import { generateBloomMix } from "../../player/bloomMix";
 import { BLOOM_MIX_MOODS } from "../../player/bloomMixMoods";
 import { formatTime } from "../../player/format";
+import { planBloomMixPlant } from "../../player/plantBloomMix";
+import { PLAYER_SESSION_KEY } from "../../player/PlayerContext";
+import { usePlayer } from "../../player/usePlayer";
 import { LoadingState } from "../LoadingState";
+
+type PlantFeedback =
+  | { kind: "success"; message: string }
+  | { kind: "info"; message: string }
+  | { kind: "partial"; message: string }
+  | { kind: "error"; message: string };
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -52,9 +61,20 @@ function MixPreviewItem({ track }: { track: Track }) {
   );
 }
 
+function plantedCountLabel(count: number): string {
+  return `${count} track${count === 1 ? "" : "s"}`;
+}
+
 export function BloomMixPanel() {
+  const queryClient = useQueryClient();
+  const { session, playTrack, enqueueTrack } = usePlayer();
   const [selectedMood, setSelectedMood] = useState<TrackMood | null>(null);
   const [seed, setSeed] = useState(1);
+  const [isPlanting, setIsPlanting] = useState(false);
+  const [plantFeedback, setPlantFeedback] = useState<PlantFeedback | null>(
+    null,
+  );
+  const plantingLockRef = useRef(false);
 
   const tracksQuery = useQuery({
     queryKey: ["tracks", "bloom-mix", selectedMood],
@@ -75,12 +95,87 @@ export function BloomMixPanel() {
   }, [selectedMood, seed, tracksQuery.data]);
 
   const selectMood = (mood: TrackMood) => {
+    if (isPlanting) {
+      return;
+    }
     setSelectedMood(mood);
     setSeed(1);
+    setPlantFeedback(null);
   };
 
   const refreshMix = () => {
+    if (isPlanting) {
+      return;
+    }
     setSeed((current) => current + 1);
+    setPlantFeedback(null);
+  };
+
+  const plantThisMix = async () => {
+    if (plantingLockRef.current || isPlanting || mix.length === 0 || !session) {
+      return;
+    }
+
+    plantingLockRef.current = true;
+    setIsPlanting(true);
+    setPlantFeedback(null);
+
+    const plan = planBloomMixPlant(
+      mix.map((track) => track.id),
+      session.active_track?.track_id ?? null,
+      session.queue.map((item) => item.track_id),
+    );
+
+    if (plan.toPlant.length === 0) {
+      setPlantFeedback({
+        kind: "info",
+        message:
+          "Every track in this mix is already active or queued.",
+      });
+      setIsPlanting(false);
+      plantingLockRef.current = false;
+      return;
+    }
+
+    let planted = 0;
+
+    try {
+      if (plan.startWithPlay) {
+        const [firstId, ...restIds] = plan.toPlant;
+        await playTrack(firstId!);
+        planted += 1;
+        for (const trackId of restIds) {
+          await enqueueTrack(trackId);
+          planted += 1;
+        }
+      } else {
+        for (const trackId of plan.toPlant) {
+          await enqueueTrack(trackId);
+          planted += 1;
+        }
+      }
+
+      setPlantFeedback({
+        kind: "success",
+        message: `Planted ${plantedCountLabel(planted)} into your garden queue.`,
+      });
+    } catch (error) {
+      if (planted > 0) {
+        setPlantFeedback({
+          kind: "partial",
+          message: `Added ${plantedCountLabel(planted)}, but the rest of the mix could not be planted. ${getErrorMessage(error)}`,
+        });
+      } else {
+        setPlantFeedback({
+          kind: "error",
+          message: getErrorMessage(error),
+        });
+      }
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: PLAYER_SESSION_KEY });
+      setIsPlanting(false);
+      plantingLockRef.current = false;
+    }
   };
 
   let resultContent: ReactNode;
@@ -118,13 +213,26 @@ export function BloomMixPanel() {
             <MixPreviewItem key={track.id} track={track} />
           ))}
         </ol>
-        <button
-          type="button"
-          className="bloom-mix__refresh"
-          onClick={refreshMix}
-        >
-          Refresh mix
-        </button>
+        <div className="bloom-mix__actions">
+          <button
+            type="button"
+            className="bloom-mix__plant"
+            disabled={isPlanting || !session}
+            onClick={() => {
+              void plantThisMix();
+            }}
+          >
+            {isPlanting ? "Planting mix…" : "Plant this mix"}
+          </button>
+          <button
+            type="button"
+            className="bloom-mix__refresh"
+            disabled={isPlanting}
+            onClick={refreshMix}
+          >
+            Refresh mix
+          </button>
+        </div>
       </div>
     );
   }
@@ -153,6 +261,7 @@ export function BloomMixPanel() {
                   : "bloom-mix__mood"
               }
               aria-pressed={isSelected}
+              disabled={isPlanting}
               onClick={() => selectMood(mood.id)}
             >
               <span className="bloom-mix__mood-name">{mood.name}</span>
@@ -166,6 +275,24 @@ export function BloomMixPanel() {
 
       <div className="bloom-mix__result" aria-live="polite">
         {resultContent}
+        {plantFeedback ? (
+          <div
+            className={
+              plantFeedback.kind === "error" || plantFeedback.kind === "partial"
+                ? "player-alert bloom-mix__feedback"
+                : plantFeedback.kind === "success"
+                  ? "award-toast bloom-mix__feedback"
+                  : "bloom-mix__feedback bloom-mix__feedback--info"
+            }
+            role={
+              plantFeedback.kind === "error" || plantFeedback.kind === "partial"
+                ? "alert"
+                : "status"
+            }
+          >
+            <p>{plantFeedback.message}</p>
+          </div>
+        ) : null}
       </div>
     </section>
   );

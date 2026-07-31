@@ -83,9 +83,9 @@ async function loadAudioSource(
     return false;
   }
 
-  if (audio.src !== new URL(source, window.location.origin).href) {
-    audio.src = source;
-    audio.load();
+  const nextSrc = new URL(source, window.location.origin).href;
+  if (audio.src === nextSrc && audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    return true;
   }
 
   return new Promise((resolve) => {
@@ -104,6 +104,13 @@ async function loadAudioSource(
 
     audio.addEventListener("canplay", handleCanPlay);
     audio.addEventListener("error", handleError);
+
+    if (audio.src !== nextSrc) {
+      audio.src = source;
+      audio.load();
+    } else {
+      audio.load();
+    }
   });
 }
 
