@@ -89,11 +89,11 @@ See [docs/architecture.md](docs/architecture.md) for a deeper architecture guide
 - Static analysis with Ruff, mypy, ESLint, and `tsc`
 - Azure Pipelines validates backend and frontend quality, tests, builds, and publishable artifacts
 - Docker image and Compose stack support local demo review without committing production secrets
-- Server-side credential handling for Spotify OAuth and Azure DevOps; see [SECURITY.md](SECURITY.md)
+- Server-side credential handling for Spotify OAuth and Azure DevOps
 
 ## Quick Start
 
-Requires Python 3.12+, Node.js 20+, and a virtual environment.
+Requires Python 3.12+, Node.js 20+, and a virtual environment. Keep `.env` files local and uncommitted.
 
 ```bash
 python3.12 -m venv .venv
@@ -144,19 +144,3 @@ musicbloom/
 - Quest and achievement pages are partly scaffold-level UI
 - CI validates and publishes artifacts but does not deploy production
 - Docker Compose demo stack is for local review, not hardened hosting
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and pull request guidance.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for release notes.
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for vulnerability reporting and security practices.
-
-## License
-
-MIT

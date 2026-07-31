@@ -1,6 +1,6 @@
 # Screenshots
 
-Portfolio captures from the local demo experience:
+Local demo captures:
 
 - `api-docs.png` — FastAPI OpenAPI docs (primary highlight)
 - `home.png` — homepage welcome meadow

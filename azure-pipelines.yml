@@ -255,7 +255,7 @@ stages:
           - download: current
             artifact: web-dist
           - script: |
-              echo "MusicBloom portfolio validation completed."
+              echo "MusicBloom validation completed."
               echo "Python package artifacts and web/dist are available as pipeline artifacts."
               echo "Deployment to production is intentionally not configured yet."
             displayName: Summarize published artifacts

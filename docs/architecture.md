@@ -1,7 +1,7 @@
 # MusicBloom Architecture
 
-MusicBloom is a full-stack portfolio application that combines a gamified visual
-music player with optional Spotify and Azure DevOps integrations.
+MusicBloom is a full-stack application that combines a gamified visual music
+player with optional Spotify and Azure DevOps integrations.
 
 ## System overview
 
@@ -111,5 +111,3 @@ flowchart TB
 ## Related documents
 
 - [README](../README.md)
-- [CONTRIBUTING](../CONTRIBUTING.md)
-- [SECURITY](../SECURITY.md)

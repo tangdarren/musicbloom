@@ -1,4 +1,4 @@
-# Local portfolio demo stack for MusicBloom.
+# Local demo stack for MusicBloom.
 # API on http://127.0.0.1:8000 and production frontend on http://127.0.0.1:8080
 
 services:
