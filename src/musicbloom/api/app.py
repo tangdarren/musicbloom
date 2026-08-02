@@ -16,6 +16,7 @@ from musicbloom.api.schemas import (
     build_root_response,
 )
 from musicbloom.api.v1.devops_handlers import register_devops_exception_handlers
+from musicbloom.api.v1.favorites_handlers import register_favorites_exception_handlers
 from musicbloom.api.v1.garden_handlers import register_garden_exception_handlers
 from musicbloom.api.v1.player_handlers import register_player_exception_handlers
 from musicbloom.api.v1.progression_handlers import (
@@ -70,6 +71,7 @@ def create_app(
     register_progression_exception_handlers(application)
     register_quest_exception_handlers(application)
     register_garden_exception_handlers(application)
+    register_favorites_exception_handlers(application)
     register_spotify_auth_exception_handlers(application)
     register_spotify_playback_exception_handlers(application)
     register_devops_exception_handlers(application)

@@ -144,6 +144,21 @@ export interface RecentBloomsResponse {
   items: RecentBloomItem[];
 }
 
+export interface FavoriteTrackItem {
+  id: number;
+  track_id: string;
+  title: string;
+  artist_name: string;
+  artwork: TrackArtwork;
+  duration_ms: number;
+  playable_in_demo_mode: boolean;
+  favorited_at: string;
+}
+
+export interface FavoritesResponse {
+  items: FavoriteTrackItem[];
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly body: string;

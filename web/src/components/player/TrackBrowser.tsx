@@ -1,19 +1,26 @@
 import type { Track } from "../../api/types";
 import { getAudioAvailability } from "../../api/client";
 import { formatTime } from "../../player/format";
+import { FavoriteToggleButton } from "./FavoriteToggleButton";
 
 interface TrackBrowserProps {
   tracks: Track[];
   activeTrackId: string | null;
+  favoritedTrackIds: ReadonlySet<string>;
+  isFavoritePending?: (trackId: string) => boolean;
   onPlay: (trackId: string) => void;
   onQueue: (trackId: string) => void;
+  onToggleFavorite: (trackId: string) => void;
 }
 
 export function TrackBrowser({
   tracks,
   activeTrackId,
+  favoritedTrackIds,
+  isFavoritePending,
   onPlay,
   onQueue,
+  onToggleFavorite,
 }: TrackBrowserProps) {
   return (
     <section className="track-browser" aria-label="Demo track browser">
@@ -25,6 +32,7 @@ export function TrackBrowser({
         {tracks.map((track) => {
           const availability = getAudioAvailability(track);
           const isActive = track.id === activeTrackId;
+          const isFavorited = favoritedTrackIds.has(track.id);
 
           return (
             <li
@@ -48,6 +56,12 @@ export function TrackBrowser({
                 </div>
               </div>
               <div className="track-browser__actions">
+                <FavoriteToggleButton
+                  trackTitle={track.title}
+                  isFavorited={isFavorited}
+                  disabled={isFavoritePending?.(track.id) ?? false}
+                  onToggle={() => onToggleFavorite(track.id)}
+                />
                 <button
                   type="button"
                   aria-label={`Play ${track.title}`}

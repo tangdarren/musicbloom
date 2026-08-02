@@ -3,6 +3,7 @@
 from musicbloom.db.models.achievement_progress import AchievementProgress
 from musicbloom.db.models.decoration_unlock import DecorationUnlockRecord
 from musicbloom.db.models.equipped_decoration import EquippedDecoration
+from musicbloom.db.models.favorite_track import FavoriteTrack
 from musicbloom.db.models.garden_profile import GardenProfile
 from musicbloom.db.models.listening_event import ListeningEvent
 from musicbloom.db.models.melody_points_transaction import MelodyPointsTransaction
@@ -18,6 +19,7 @@ __all__ = [
     "AchievementProgress",
     "DecorationUnlockRecord",
     "EquippedDecoration",
+    "FavoriteTrack",
     "GardenProfile",
     "ListeningEvent",
     "MelodyPointsTransaction",

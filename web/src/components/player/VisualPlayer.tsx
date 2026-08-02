@@ -1,15 +1,17 @@
 import { InlineAlert } from "../InlineAlert";
 import { LoadingState } from "../LoadingState";
+import { useFavorites } from "../../player/useFavorites";
+import { usePlayer } from "../../player/usePlayer";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { BloomMixPanel } from "./BloomMixPanel";
 import { DemoModeBanner } from "./DemoModeBanner";
+import { FavoritesPanel } from "./FavoritesPanel";
 import { NowPlaying } from "./NowPlaying";
 import { PlayerControls } from "./PlayerControls";
 import { QueuePanel } from "./QueuePanel";
 import { SeekBar } from "./SeekBar";
 import { TrackBrowser } from "./TrackBrowser";
 import { VolumeControl } from "./VolumeControl";
-import { usePlayer } from "../../player/usePlayer";
 
 export function VisualPlayer() {
   const {
@@ -36,6 +38,14 @@ export function VisualPlayer() {
     isPlaying,
     activeTrack,
   } = usePlayer();
+  const {
+    favorites,
+    favoritedTrackIds,
+    isLoading: favoritesLoading,
+    isError: favoritesError,
+    toggleFavorite,
+    isToggling,
+  } = useFavorites();
 
   if (isLoading) {
     return <LoadingState label="Loading visual player" />;
@@ -119,6 +129,19 @@ export function VisualPlayer() {
 
         <div className="visual-player__side">
           <BloomMixPanel />
+          <FavoritesPanel
+            favorites={favorites}
+            isLoading={favoritesLoading}
+            isError={favoritesError}
+            isToggling={isToggling}
+            onToggleFavorite={toggleFavorite}
+            onPlay={(trackId) => {
+              void playTrack(trackId);
+            }}
+            onQueue={(trackId) => {
+              void enqueueTrack(trackId);
+            }}
+          />
           <QueuePanel
             queue={session.queue}
             activeTrackId={activeTrack?.track_id ?? null}
@@ -129,12 +152,15 @@ export function VisualPlayer() {
           <TrackBrowser
             tracks={tracks}
             activeTrackId={activeTrack?.track_id ?? null}
+            favoritedTrackIds={favoritedTrackIds}
+            isFavoritePending={isToggling}
             onPlay={(trackId) => {
               void playTrack(trackId);
             }}
             onQueue={(trackId) => {
               void enqueueTrack(trackId);
             }}
+            onToggleFavorite={toggleFavorite}
           />
         </div>
       </div>

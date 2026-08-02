@@ -114,6 +114,51 @@ describe("api client", () => {
       expect.any(Object),
     );
   });
+
+  it("manages favorite tracks", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ items: [] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiClient.getFavorites()).resolves.toEqual({ items: [] });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/favorites",
+      expect.any(Object),
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          id: 1,
+          track_id: "demo-track-001",
+          title: "Morning Dew Waltz",
+          artist_name: "Petal & Pine",
+          artwork: { local_path: "/static/demo/artwork/morning-dew-waltz.png" },
+          duration_ms: 184000,
+          playable_in_demo_mode: true,
+          favorited_at: "2026-08-01T18:00:00Z",
+        }),
+    });
+    await apiClient.addFavorite("demo-track-001");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/favorites/demo-track-001",
+      expect.objectContaining({ method: "PUT" }),
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      text: async () => "",
+    });
+    await apiClient.removeFavorite("demo-track-001");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/favorites/demo-track-001",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
 });
 
 describe("media helpers", () => {

@@ -86,6 +86,7 @@ describe("VisualPlayer", () => {
       page_size: 20,
       total_pages: 1,
     });
+    vi.spyOn(apiClient, "getFavorites").mockResolvedValue({ items: [] });
     vi.spyOn(apiClient, "submitListeningEvent").mockResolvedValue({
       id: 1,
       idempotency_key: "demo",
@@ -168,5 +169,67 @@ describe("VisualPlayer", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /Player API unavailable/i,
     );
+  });
+
+  it("favorites a track from the browser and updates UI state", async () => {
+    const addSpy = vi.spyOn(apiClient, "addFavorite").mockResolvedValue({
+      id: 1,
+      track_id: demoTrack.id,
+      title: demoTrack.title,
+      artist_name: demoTrack.artist_name,
+      artwork: demoTrack.artwork,
+      duration_ms: demoTrack.duration_ms,
+      playable_in_demo_mode: true,
+      favorited_at: "2026-08-01T18:00:00Z",
+    });
+    vi.spyOn(apiClient, "getFavorites").mockImplementation(async () => {
+      if (addSpy.mock.calls.length > 0) {
+        return {
+          items: [
+            {
+              id: 1,
+              track_id: demoTrack.id,
+              title: demoTrack.title,
+              artist_name: demoTrack.artist_name,
+              artwork: demoTrack.artwork,
+              duration_ms: demoTrack.duration_ms,
+              playable_in_demo_mode: true,
+              favorited_at: "2026-08-01T18:00:00Z",
+            },
+          ],
+        };
+      }
+      return { items: [] };
+    });
+
+    const user = userEvent.setup();
+    renderPlayer();
+
+    expect(await screen.findByText(/No favorites yet/i)).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Add Morning Dew Waltz to favorites",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(addSpy).toHaveBeenCalledWith("demo-track-001");
+    });
+
+    const favoritesRegion = await screen.findByRole("region", {
+      name: "Favorite tracks",
+    });
+    expect(favoritesRegion).toHaveTextContent("Morning Dew Waltz");
+    expect(
+      screen.getAllByRole("button", {
+        name: "Remove Morning Dew Waltz from favorites",
+      }).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("button", {
+        name: "Remove Morning Dew Waltz from favorites",
+      })[0],
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });

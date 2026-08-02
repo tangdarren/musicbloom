@@ -77,6 +77,7 @@ describe("routing", () => {
       total_pages: 0,
     });
     vi.spyOn(apiClient, "getRecentBlooms").mockResolvedValue({ items: [] });
+    vi.spyOn(apiClient, "getFavorites").mockResolvedValue({ items: [] });
     vi.spyOn(apiClient, "getDevOpsStatus").mockResolvedValue({
       configured: false,
       demo_mode: true,

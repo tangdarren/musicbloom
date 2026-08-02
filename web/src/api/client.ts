@@ -188,6 +188,14 @@ export const apiClient = {
     apiGet<import("./types").RecentBloomsResponse>(
       `/api/v1/history/recent?limit=${limit}`,
     ),
+  getFavorites: () =>
+    apiGet<import("./types").FavoritesResponse>("/api/v1/favorites"),
+  addFavorite: (trackId: string) =>
+    apiPut<import("./types").FavoriteTrackItem>(
+      `/api/v1/favorites/${trackId}`,
+    ),
+  removeFavorite: (trackId: string) =>
+    apiDelete<void>(`/api/v1/favorites/${trackId}`),
   getGarden: () => apiGet<import("./gardenTypes").GardenState>("/api/v1/garden"),
   getDecorations: () =>
     apiGet<import("./gardenTypes").DecorationCatalogEntry[]>(

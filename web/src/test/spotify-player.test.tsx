@@ -83,6 +83,7 @@ describe("Spotify playback integration", () => {
       page_size: 20,
       total_pages: 0,
     });
+    vi.spyOn(apiClient, "getFavorites").mockResolvedValue({ items: [] });
   });
 
   it("keeps demo mode active by default", async () => {
