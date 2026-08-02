@@ -1,6 +1,7 @@
 .garden-page__layout {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .garden-page__hero {
@@ -232,6 +233,20 @@
   animation: none;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .bloom-bud--celebrating .bloom-bud__svg,
+  .garden-scene__flower--blooming svg,
+  .garden-scene__plant--swaying svg,
+  .garden-scene--streak::after {
+    animation: none !important;
+  }
+
+  .bloom-bud--resting .bloom-bud__svg {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 @keyframes flower-bloom {
   0% {
     transform: scale(0.7);
@@ -311,6 +326,15 @@
   justify-content: space-between;
   gap: 0.75rem;
   align-items: flex-start;
+  min-width: 0;
+}
+
+.garden-decorations__item > div {
+  min-width: 0;
+}
+
+.garden-decorations__item .button {
+  flex-shrink: 0;
 }
 
 .garden-decorations__item strong,
@@ -349,5 +373,13 @@
 
   .garden-decorations__item {
     flex-direction: column;
+  }
+
+  .garden-decorations__item .button {
+    width: 100%;
+  }
+
+  .garden-page__scene-wrap {
+    padding: 1rem;
   }
 }

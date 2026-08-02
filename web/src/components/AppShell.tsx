@@ -7,8 +7,11 @@ export function AppShell() {
   return (
     <PlaybackSignalsProvider>
       <div className="app-shell">
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         <TopNav />
-        <main className="app-shell__main" id="main-content">
+        <main className="app-shell__main" id="main-content" tabIndex={-1}>
           <Outlet />
         </main>
         <footer className="app-shell__footer">

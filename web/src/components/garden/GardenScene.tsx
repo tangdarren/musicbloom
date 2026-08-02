@@ -223,6 +223,7 @@ export function DecorationPanel({
                 type="button"
                 className="button button--secondary"
                 disabled={busyId === decoration.id}
+                aria-label={`Unequip ${decoration.name}`}
                 onClick={() => onUnequip(decoration.id)}
               >
                 Unequip
@@ -232,6 +233,7 @@ export function DecorationPanel({
                 type="button"
                 className="button"
                 disabled={busyId === decoration.id}
+                aria-label={`Equip ${decoration.name}`}
                 onClick={() => onEquip(decoration.id)}
               >
                 Equip

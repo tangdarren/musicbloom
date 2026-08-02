@@ -122,7 +122,9 @@ describe("InteractiveGarden", () => {
 
     renderGarden();
 
-    const equipButton = await screen.findByRole("button", { name: "Equip" });
+    const equipButton = await screen.findByRole("button", {
+      name: "Equip First Sprout",
+    });
     await user.click(equipButton);
 
     await waitFor(() => {

@@ -74,11 +74,12 @@
   gap: 0.2rem;
   justify-items: end;
   text-align: right;
+  min-width: 0;
 }
 
 .recent-blooms__status {
   display: inline-flex;
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
   border: 1px solid var(--color-border);
   background: #fff;
@@ -86,6 +87,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  max-width: 100%;
 }
 
 .recent-blooms__status--completed {
@@ -115,5 +117,10 @@
     grid-column: 2;
     justify-items: start;
     text-align: left;
+  }
+
+  .recent-blooms__title,
+  .recent-blooms__meta .muted {
+    white-space: normal;
   }
 }
