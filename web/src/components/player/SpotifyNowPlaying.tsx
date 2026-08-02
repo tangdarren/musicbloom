@@ -1,5 +1,6 @@
 import type { SpotifyPlayerSnapshot } from "../../api/spotifyPlayerTypes";
 import { formatTime } from "../../player/format";
+import { InlineAlert } from "../InlineAlert";
 
 interface SpotifyNowPlayingProps {
   snapshot: SpotifyPlayerSnapshot;
@@ -51,14 +52,12 @@ export function SpotifyNowPlaying({
           </p>
         ) : null}
         {snapshot.control_unavailable_reason ? (
-          <p className="player-alert" role="status">
+          <InlineAlert as="p" role="status">
             {snapshot.control_unavailable_reason}
-          </p>
+          </InlineAlert>
         ) : null}
         {errorMessage ? (
-          <p className="player-alert" role="alert">
-            {errorMessage}
-          </p>
+          <InlineAlert as="p">{errorMessage}</InlineAlert>
         ) : null}
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { InlineAlert } from "../InlineAlert";
 import { LoadingState } from "../LoadingState";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { BloomMixPanel } from "./BloomMixPanel";
@@ -42,9 +43,9 @@ export function VisualPlayer() {
 
   if (isError || !session) {
     return (
-      <div className="player-alert" role="alert">
+      <InlineAlert>
         {errorMessage ?? "Unable to load the player session."}
-      </div>
+      </InlineAlert>
     );
   }
 

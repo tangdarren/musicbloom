@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, resolveMediaPath } from "../../api/client";
 import { ApiError, NetworkError, type Track, type TrackMood } from "../../api/types";
 import { useReducedMotion } from "../dev-garden/useReducedMotion";
+import { EmptyState } from "../EmptyState";
+import { InlineAlert } from "../InlineAlert";
+import { LoadingState } from "../LoadingState";
 import { generateBloomMix } from "../../player/bloomMix";
 import { BLOOM_MIX_MOODS } from "../../player/bloomMixMoods";
 import { formatTime } from "../../player/format";
@@ -229,24 +232,19 @@ export function BloomMixPanel() {
       </p>
     );
   } else if (isMoodLoading) {
-    resultContent = (
-      <div className="loading-state" role="status">
-        <span className="loading-state__spinner" aria-hidden="true" />
-        <span>Growing your BloomMix</span>
-      </div>
-    );
+    resultContent = <LoadingState label="Growing your BloomMix" />;
   } else if (tracksQuery.isError) {
     resultContent = (
-      <div className="player-alert" role="alert">
+      <InlineAlert>
         <span className="bloom-mix__feedback-prefix">Unable to load</span>
         {getBloomMixErrorMessage(tracksQuery.error, "load")}
-      </div>
+      </InlineAlert>
     );
   } else if (mix.length === 0) {
     resultContent = (
-      <p className="muted" role="status">
+      <EmptyState>
         No playable tracks are available for this mood right now.
-      </p>
+      </EmptyState>
     );
   } else {
     resultContent = (

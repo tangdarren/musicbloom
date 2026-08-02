@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import { PageFrame } from "./PageFrame";
+import { PageIntro } from "./PageIntro";
+
 interface PageCardProps {
   eyebrow?: string;
   title: string;
@@ -9,13 +12,11 @@ interface PageCardProps {
 
 export function PageCard({ eyebrow, title, lede, children }: PageCardProps) {
   return (
-    <section className="page">
+    <PageFrame>
       <article className="card page-card">
-        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <h1>{title}</h1>
-        {lede ? <p className="lede">{lede}</p> : null}
+        <PageIntro eyebrow={eyebrow} title={title} lede={lede} />
         {children}
       </article>
-    </section>
+    </PageFrame>
   );
 }

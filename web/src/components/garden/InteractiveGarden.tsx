@@ -10,6 +10,7 @@ import {
   usePlaybackSignals,
   usePrefersReducedMotion,
 } from "../../player/PlaybackSignalsContext";
+import { PageIntro } from "../PageIntro";
 import { BloomBud } from "./BloomBud";
 import { moodLabel } from "./gardenMood";
 import { DecorationPanel, GardenScene } from "./GardenScene";
@@ -102,14 +103,14 @@ export function InteractiveGarden() {
   return (
     <div className="garden-page__layout">
       <section className="garden-page__hero" aria-labelledby="garden-title">
-        <div className="garden-page__intro">
-          <p className="eyebrow">{garden.profile.garden_name}</p>
-          <h1 id="garden-title">Your MusicBloom garden</h1>
-          <p className="lede">
-            BloomBud watches over flowers for your favorite artists, milestone
-            plants, and the decorations you unlock by listening.
-          </p>
-        </div>
+        <PageIntro
+          as="div"
+          className="garden-page__intro"
+          eyebrow={garden.profile.garden_name}
+          title="Your MusicBloom garden"
+          titleId="garden-title"
+          lede="BloomBud watches over flowers for your favorite artists, milestone plants, and the decorations you unlock by listening."
+        />
 
         <div className="garden-page__stats">
           <StatCard label="Level" value={garden.level.level} />

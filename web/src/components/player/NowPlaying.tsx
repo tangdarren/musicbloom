@@ -1,6 +1,7 @@
 import type { ActiveTrack } from "../../api/types";
 import { getAudioAvailability } from "../../api/client";
 import { formatTime } from "../../player/format";
+import { InlineAlert } from "../InlineAlert";
 
 interface NowPlayingProps {
   track: ActiveTrack | null;
@@ -65,9 +66,7 @@ export function NowPlaying({ track, positionMs, audioError }: NowPlayingProps) {
           catalog duration
         </p>
         {audioError ? (
-          <p className="player-alert" role="alert">
-            {audioError}
-          </p>
+          <InlineAlert as="p">{audioError}</InlineAlert>
         ) : null}
       </div>
     </section>

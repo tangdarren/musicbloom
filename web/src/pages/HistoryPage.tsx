@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiClient, resolveMediaPath } from "../api/client";
 import type { ListeningStatus, RecentBloomItem } from "../api/types";
+import { EmptyState } from "../components/EmptyState";
+import { InlineAlert } from "../components/InlineAlert";
 import { LoadingState } from "../components/LoadingState";
 import { PageCard } from "../components/PageCard";
 
@@ -135,16 +137,16 @@ export function HistoryPage() {
       ) : null}
 
       {historyQuery.isError ? (
-        <div className="player-alert" role="alert">
+        <InlineAlert>
           Unable to load listening history. Please try again in a moment.
-        </div>
+        </InlineAlert>
       ) : null}
 
       {historyQuery.isSuccess && groups.length === 0 ? (
-        <p className="muted" role="status">
+        <EmptyState>
           No blooms yet. Play a demo track in the visual player to grow your
           listening history.
-        </p>
+        </EmptyState>
       ) : null}
 
       {historyQuery.isSuccess && groups.length > 0 ? (

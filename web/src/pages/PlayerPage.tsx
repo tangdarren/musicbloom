@@ -1,23 +1,24 @@
-import { PlayerProvider } from "../player/PlayerContext";
-import { PlaybackModeProvider } from "../player/PlaybackModeContext";
+import { PageFrame } from "../components/PageFrame";
+import { PageIntro } from "../components/PageIntro";
 import { PlaybackStudio } from "../components/player/PlaybackStudio";
+import { PlaybackModeProvider } from "../player/PlaybackModeContext";
+import { PlayerProvider } from "../player/PlayerContext";
 
 export function PlayerPage() {
   return (
-    <section className="page player-page">
-      <header className="player-page__header">
-        <p className="eyebrow">Visual player</p>
-        <h1>Garden playback studio</h1>
-        <p className="lede">
-          Choose Demo Mode for the fictional catalog or Spotify Mode for live
-          metadata and playback control through your connected account.
-        </p>
-      </header>
+    <PageFrame className="player-page">
+      <PageIntro
+        as="header"
+        className="player-page__header"
+        eyebrow="Visual player"
+        title="Garden playback studio"
+        lede="Choose Demo Mode for the fictional catalog or Spotify Mode for live metadata and playback control through your connected account."
+      />
       <PlaybackModeProvider>
         <PlayerProvider>
           <PlaybackStudio />
         </PlayerProvider>
       </PlaybackModeProvider>
-    </section>
+    </PageFrame>
   );
 }

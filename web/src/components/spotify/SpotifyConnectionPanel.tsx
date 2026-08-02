@@ -1,4 +1,5 @@
 import type { SpotifyConnectionStatus, SpotifyPanelState } from "../../api/spotifyTypes";
+import { PageIntro } from "../PageIntro";
 
 interface SpotifyConnectionPanelProps {
   status: SpotifyConnectionStatus | undefined;
@@ -66,11 +67,15 @@ export function SpotifyConnectionPanel({
 
   return (
     <section className="spotify-panel" aria-labelledby="spotify-panel-title">
-      <div className="spotify-panel__header">
-        <p className="eyebrow">Account linking</p>
-        <h2 id="spotify-panel-title">{copy.title}</h2>
-        <p className="lede">{copy.description}</p>
-      </div>
+      <PageIntro
+        as="div"
+        className="spotify-panel__header"
+        eyebrow="Account linking"
+        title={copy.title}
+        titleAs="h2"
+        titleId="spotify-panel-title"
+        lede={copy.description}
+      />
 
       <div className="spotify-panel__status" data-state={panelState}>
         <span className="spotify-panel__badge">{panelState}</span>

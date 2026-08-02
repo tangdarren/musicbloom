@@ -1,9 +1,10 @@
 import { InteractiveGarden } from "../components/garden/InteractiveGarden";
+import { PageFrame } from "../components/PageFrame";
 
 export function GardenPage() {
   return (
-    <section className="page garden-page">
+    <PageFrame className="garden-page">
       <InteractiveGarden />
-    </section>
+    </PageFrame>
   );
 }

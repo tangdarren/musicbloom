@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { InlineAlert } from "../InlineAlert";
 import { LoadingState } from "../LoadingState";
 import { MetadataVisualizer } from "./MetadataVisualizer";
 import { PlayerControls } from "./PlayerControls";
@@ -34,9 +35,9 @@ export function SpotifyVisualPlayer() {
 
   if (isError || !snapshot) {
     return (
-      <div className="player-alert" role="alert">
+      <InlineAlert>
         {errorMessage ?? "Unable to load Spotify playback metadata."}
-      </div>
+      </InlineAlert>
     );
   }
 
