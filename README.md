@@ -26,6 +26,8 @@ Versioned REST routes for the demo catalog, player session, queue, and progressi
 
 - Visual music player with playback controls, queue management, and listening-event sync
 - **BloomMix** — mood-based five-track preview generation and planting into the server-backed queue
+- **Recent Blooms** — listening history at `/history`, built from persisted listening events
+- **Favorites** — persisted favorite tracks with player toggles and a Favorites panel
 - Garden progression with Melody Points, quests, achievements, decorations, and BloomBud
 - FastAPI REST API with persistent player sessions and a demo music catalog
 - Optional Spotify OAuth for connection status, playback metadata, and remote controls
@@ -58,7 +60,7 @@ Versioned REST routes for the demo catalog, player session, queue, and progressi
 
 ## Architecture
 
-The React client calls the FastAPI service. Domain services cover the demo catalog, player sessions, progression, and optional Spotify and Azure DevOps clients. Repositories persist state through SQLAlchemy to SQLite or PostgreSQL.
+The React client calls the FastAPI service. Domain services cover the demo catalog, player sessions, progression, favorites, and optional Spotify and Azure DevOps clients. Repositories persist state through SQLAlchemy to SQLite or PostgreSQL.
 
 ```mermaid
 flowchart TB
@@ -115,12 +117,31 @@ npm run dev
 ```
 
 - App: http://127.0.0.1:5173/
+- Recent Blooms: http://127.0.0.1:5173/history
 - API: http://127.0.0.1:8000/
 - OpenAPI: http://127.0.0.1:8000/docs
 
+Backend checks (from the repo root, venv active):
+
+```bash
+alembic upgrade head
+python -m pytest
+python -m ruff check src tests
+python -m mypy src
+```
+
+Frontend checks (from `web/`):
+
+```bash
+npm run lint
+npm run typecheck
+npm run test -- --run
+npm run build
+```
+
 ## Demo Mode
 
-`MUSICBLOOM_DEMO_MODE=true` (default in `.env.example`) runs the catalog, player, garden progression, and Dev Garden sample data without Spotify or Azure DevOps credentials. Optional integrations activate only when their environment variables are configured.
+`MUSICBLOOM_DEMO_MODE=true` (default in `.env.example`) runs the catalog, player, garden progression, Recent Blooms, favorites, and Dev Garden sample data without Spotify or Azure DevOps credentials. Optional integrations activate only when their environment variables are configured.
 
 ## Project Structure
 

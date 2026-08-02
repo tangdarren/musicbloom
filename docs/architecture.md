@@ -31,6 +31,7 @@ flowchart TB
 ### React frontend (`web/`)
 
 - Visual demo player with Web Audio visualization and listening-event sync
+- Recent Blooms history (`/history`) and favorite-track controls in the player
 - Interactive listening garden with BloomBud mascot
 - Optional Spotify mode for metadata-driven playback controls
 - Dev Garden scene for Azure Pipelines health
@@ -45,7 +46,7 @@ flowchart TB
 
 ### Services (`src/musicbloom/services/`)
 
-- Business logic for player sessions, progression, quests, garden, Spotify, and
+- Business logic for player sessions, progression, favorites, quests, garden, Spotify, and
   Azure DevOps
 - Error mapping from external APIs into safe HTTP responses
 - Demo-mode fallbacks when optional integrations are not configured

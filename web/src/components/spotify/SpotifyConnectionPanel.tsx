@@ -45,7 +45,7 @@ function statusCopy(
       return {
         title: "Connect Spotify",
         description:
-          "Link your Spotify account when credentials are configured. Playback controls are coming later.",
+          "Link your Spotify account when credentials are configured. Use Spotify Mode in the visual player for metadata and remote playback controls.",
       };
   }
 }
