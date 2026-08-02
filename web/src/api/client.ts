@@ -184,6 +184,10 @@ export const apiClient = {
     position_ms: number;
     idempotency_key: string;
   }) => apiPost<ListeningEventRecord>("/api/v1/listening/events", payload),
+  getRecentBlooms: (limit = 50) =>
+    apiGet<import("./types").RecentBloomsResponse>(
+      `/api/v1/history/recent?limit=${limit}`,
+    ),
   getGarden: () => apiGet<import("./gardenTypes").GardenState>("/api/v1/garden"),
   getDecorations: () =>
     apiGet<import("./gardenTypes").DecorationCatalogEntry[]>(

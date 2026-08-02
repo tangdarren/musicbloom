@@ -1,0 +1,119 @@
+.recent-blooms {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.recent-blooms__day-heading {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.recent-blooms__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.recent-blooms__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-accent);
+  min-width: 0;
+}
+
+.recent-blooms__artwork {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #dff5e7, #f4c9de);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.recent-blooms__artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recent-blooms__meta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.recent-blooms__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-blooms__meta .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-blooms__status-block {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.recent-blooms__status {
+  display: inline-flex;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.recent-blooms__status--completed {
+  background: var(--color-success);
+  color: var(--color-success-text);
+  border-color: #9ed5b3;
+}
+
+.recent-blooms__status--played {
+  background: var(--color-bg-accent);
+  color: var(--color-primary-strong);
+  border-color: var(--color-border);
+}
+
+.recent-blooms__status--skipped {
+  background: var(--color-warning);
+  color: #6a4a12;
+  border-color: #f1c27d;
+}
+
+@media (max-width: 560px) {
+  .recent-blooms__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .recent-blooms__status-block {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
+  }
+}

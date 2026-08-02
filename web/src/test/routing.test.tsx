@@ -76,6 +76,7 @@ describe("routing", () => {
       page_size: 20,
       total_pages: 0,
     });
+    vi.spyOn(apiClient, "getRecentBlooms").mockResolvedValue({ items: [] });
     vi.spyOn(apiClient, "getDevOpsStatus").mockResolvedValue({
       configured: false,
       demo_mode: true,
@@ -109,6 +110,7 @@ describe("routing", () => {
     ["/", "Grow your music garden, one song at a time"],
     ["/player", "Garden playback studio"],
     ["/garden", "Your MusicBloom garden"],
+    ["/history", "Listening history"],
     ["/quests", "Quest board"],
     ["/achievements", "Achievement gallery"],
     ["/dev-garden", "Dev Garden"],
@@ -153,6 +155,10 @@ describe("navigation", () => {
     expect(screen.getByRole("link", { name: "Garden" })).toHaveAttribute(
       "href",
       "/garden",
+    );
+    expect(screen.getByRole("link", { name: "History" })).toHaveAttribute(
+      "href",
+      "/history",
     );
     expect(screen.getByRole("link", { name: "Quests" })).toHaveAttribute(
       "href",

@@ -19,8 +19,11 @@ from musicbloom.models.progression import (
     ListeningEventRecord,
     ListeningEventType,
     ListeningStatistics,
+    ListeningStatus,
     PointsAwardExplanation,
     ProgressSummary,
+    RecentBloomItem,
+    RecentBloomsResponse,
 )
 from musicbloom.progression.levels import compute_user_level
 from musicbloom.progression.policy import PolicyAward, ProgressionPolicy
@@ -171,6 +174,38 @@ class ProgressionService:
         """Return the current daily listening streak."""
         progress = self._progress.require_for_user(self._user_id)
         return build_daily_streak(progress)
+
+    def get_recent_blooms(self, *, limit: int = 50) -> RecentBloomsResponse:
+        """Return catalog-enriched recent listening history for the demo user."""
+        events = self._listening_events.list_recent_for_user(
+            self._user_id,
+            limit=limit,
+        )
+        items: list[RecentBloomItem] = []
+        for event in events:
+            track = self._catalog_service.get_track(event.track_id)
+            if track is None:
+                continue
+            items.append(
+                RecentBloomItem(
+                    id=event.id,
+                    track_id=event.track_id,
+                    title=track.title,
+                    artist_name=track.artist_name,
+                    artwork=track.artwork,
+                    listening_status=self._listening_status_for_event(event.event_type),
+                    occurred_at=event.occurred_at,
+                ),
+            )
+        return RecentBloomsResponse(items=items)
+
+    @staticmethod
+    def _listening_status_for_event(event_type: str) -> ListeningStatus:
+        if event_type == ListeningEventType.COMPLETED:
+            return ListeningStatus.COMPLETED
+        if event_type == ListeningEventType.SKIPPED:
+            return ListeningStatus.SKIPPED
+        return ListeningStatus.PLAYED
 
     def _build_duplicate_event_response(
         self,

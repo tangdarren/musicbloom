@@ -6,6 +6,7 @@ const navItems: Array<{ to: string; label: string; end?: boolean }> = [
   { to: "/", label: "Home", end: true },
   { to: "/player", label: "Player" },
   { to: "/garden", label: "Garden" },
+  { to: "/history", label: "History" },
   { to: "/quests", label: "Quests" },
   { to: "/achievements", label: "Achievements" },
   { to: "/dev-garden", label: "Dev Garden" },

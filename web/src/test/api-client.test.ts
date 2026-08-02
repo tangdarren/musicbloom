@@ -98,6 +98,22 @@ describe("api client", () => {
       expect.objectContaining({ method: "POST" }),
     );
   });
+
+  it("fetches recent blooms history", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ items: [] }),
+      }),
+    );
+
+    await expect(apiClient.getRecentBlooms(20)).resolves.toEqual({ items: [] });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/history/recent?limit=20",
+      expect.any(Object),
+    );
+  });
 });
 
 describe("media helpers", () => {

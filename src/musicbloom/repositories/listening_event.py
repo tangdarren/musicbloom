@@ -62,6 +62,26 @@ class ListeningEventRepository:
             ),
         )
 
+    def list_recent_for_user(
+        self,
+        user_id: int,
+        *,
+        limit: int = 50,
+        event_types: tuple[str, ...] = ("started", "completed", "skipped"),
+    ) -> list[ListeningEvent]:
+        """Return recent activity events for history, newest first."""
+        return list(
+            self._db.scalars(
+                select(ListeningEvent)
+                .where(
+                    ListeningEvent.user_id == user_id,
+                    ListeningEvent.event_type.in_(event_types),
+                )
+                .order_by(ListeningEvent.occurred_at.desc())
+                .limit(limit),
+            ),
+        )
+
     def list_completed_track_ids_in_period(
         self,
         *,

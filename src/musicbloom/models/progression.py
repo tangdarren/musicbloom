@@ -5,12 +5,22 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from musicbloom.models.catalog import TrackArtwork
+
 
 class ListeningEventType(StrEnum):
     """Supported listening event types reported by the client."""
 
     STARTED = "started"
     PROGRESS = "progress"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+
+
+class ListeningStatus(StrEnum):
+    """User-facing listening status for Recent Blooms history."""
+
+    PLAYED = "played"
     COMPLETED = "completed"
     SKIPPED = "skipped"
 
@@ -131,4 +141,27 @@ class ListeningEventRecord(BaseModel):
     duplicate: bool = Field(
         default=False,
         description="Whether this response was replayed from an idempotent submission",
+    )
+
+
+class RecentBloomItem(BaseModel):
+    """A catalog-enriched listening history entry for Recent Blooms."""
+
+    id: int = Field(description="Listening event identifier")
+    track_id: str = Field(description="Catalog track identifier")
+    title: str = Field(description="Track title")
+    artist_name: str = Field(description="Track artist name")
+    artwork: TrackArtwork = Field(description="Track artwork")
+    listening_status: ListeningStatus = Field(
+        description="Played, completed, or skipped status for display",
+    )
+    occurred_at: datetime = Field(description="UTC timestamp when the event occurred")
+
+
+class RecentBloomsResponse(BaseModel):
+    """Recent listening history for the current demo user."""
+
+    items: list[RecentBloomItem] = Field(
+        default_factory=list,
+        description="History items ordered newest first",
     )

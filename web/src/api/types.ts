@@ -128,6 +128,22 @@ export interface ListeningEventRecord {
   duplicate: boolean;
 }
 
+export type ListeningStatus = "played" | "completed" | "skipped";
+
+export interface RecentBloomItem {
+  id: number;
+  track_id: string;
+  title: string;
+  artist_name: string;
+  artwork: TrackArtwork;
+  listening_status: ListeningStatus;
+  occurred_at: string;
+}
+
+export interface RecentBloomsResponse {
+  items: RecentBloomItem[];
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly body: string;

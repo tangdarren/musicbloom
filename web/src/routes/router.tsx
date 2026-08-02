@@ -5,6 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { DevGardenPage } from "../pages/DevGardenPage";
 import { GardenPage } from "../pages/GardenPage";
+import { HistoryPage } from "../pages/HistoryPage";
 import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlayerPage } from "../pages/PlayerPage";
@@ -19,6 +20,7 @@ export const appRoutes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: "player", element: <PlayerPage /> },
       { path: "garden", element: <GardenPage /> },
+      { path: "history", element: <HistoryPage /> },
       { path: "quests", element: <QuestsPage /> },
       { path: "achievements", element: <AchievementsPage /> },
       { path: "dev-garden", element: <DevGardenPage /> },
